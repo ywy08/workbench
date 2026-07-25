@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#556B2F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="工作台">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-touch-icon" content="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23556B2F'/%3E%3Ctext x='50' y='68' font-size='50' font-weight='bold' fill='white' text-anchor='middle' font-family='Arial'%3E工%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23556B2F'/%3E%3Ctext x='50' y='68' font-size='50' font-weight='bold' fill='white' text-anchor='middle' font-family='Arial'%3E工%3C/text%3E%3C/svg%3E">
+<title>工作台</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--primary:#556B2F;--primary-light:#7BA05B;--primary-dark:#3F4F22;--bg:#f5f7f0;--card:#fff;--text:#2d3b1f;--text-secondary:#6b7560;--border:#e5e8dd;--shadow:0 2px 12px rgba(85,107,47,0.08);--radius:16px}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+body{display:flex;flex-direction:column}
+.app-header{position:fixed;top:0;left:0;right:0;height:56px;background:var(--primary);color:#fff;display:flex;align-items:center;padding:0 16px;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+.menu-btn{background:none;border:none;color:#fff;font-size:24px;cursor:pointer;padding:8px;margin-right:12px}
+.app-title{font-size:17px;font-weight:600;flex:1}
+.date-display{font-size:13px;opacity:0.85}
+.drawer-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:200;opacity:0;visibility:hidden;transition:all 0.3s}
+.drawer-overlay.active{opacity:1;visibility:visible}
+.drawer{position:fixed;top:0;left:-280px;bottom:0;width:260px;background:#fff;z-index:300;transition:left 0.3s ease;display:flex;flex-direction:column;box-shadow:2px 0 20px rgba(0,0,0,0.1)}
+.drawer.active{left:0}
+.drawer-header{padding:24px 20px;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff}
+.drawer-header h2{font-size:20px;margin-bottom:4px}
+.drawer-header p{font-size:13px;opacity:0.9}
+.drawer-user{display:flex;align-items:center;margin-bottom:10px}
+.drawer-avatar{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;margin-right:12px}
+.drawer-user-info{flex:1;min-width:0}
+.drawer-name{font-size:16px;font-weight:600}
+.drawer-date{font-size:12px;opacity:0.85}
+.drawer-quote{font-size:12px;opacity:0.9;line-height:1.4;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.2)}
+.drawer-quote-text{font-style:italic}
+.drawer-quote-author{font-size:11px;opacity:0.75;text-align:right;margin-top:4px}
+.drawer-nav{flex:1;padding:8px 0;overflow-y:auto}
+.nav-item{display:flex;align-items:center;padding:12px 16px;cursor:pointer;border:none;background:none;width:100%;text-align:left;font-size:14px;color:var(--text);transition:all 0.2s;border-left:3px solid transparent}
+.nav-item:hover{background:rgba(85,107,47,0.05)}
+.nav-item.active{background:rgba(85,107,47,0.1);border-left-color:var(--primary);color:var(--primary-dark);font-weight:500}
+.nav-icon{font-size:18px;margin-right:12px;width:24px;text-align:center}
+.quote-manage-btn{background:none;border:none;color:rgba(255,255,255,0.7);font-size:11px;cursor:pointer;margin-top:6px;padding:0;text-align:right;width:100%}
+.quote-manage-btn:active{color:#fff}
+.main{flex:1;margin-top:56px;padding:16px;padding-bottom:80px}
+.module{display:none;animation:fadeIn 0.3s}
+.module.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card-title{font-size:16px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.card-title .icon{font-size:18px;margin-right:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 16px;border-radius:10px;border:none;font-size:14px;font-weight:500;cursor:pointer;transition:all 0.2s;gap:6px}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:active{background:var(--primary-dark)}
+.btn-secondary{background:rgba(85,107,47,0.1);color:var(--primary)}
+.btn-secondary:active{background:rgba(85,107,47,0.2)}
+.btn-danger{background:#fee;color:#d44}
+.btn-block{width:100%}
+.btn-small{padding:6px 12px;font-size:12px}
+.input{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:#fafbf7;transition:border-color 0.2s}
+.input:focus{outline:none;border-color:var(--primary)}
+.textarea{min-height:80px;resize:vertical;font-family:inherit}
+.task-item{display:flex;align-items:center;padding:12px;background:#fafbf7;border-radius:12px;margin-bottom:8px;transition:background 0.2s}
+.task-item:hover{background:#f0f3e8}
+.task-checkbox{width:22px;height:22px;margin-right:12px;accent-color:var(--primary);cursor:pointer}
+.task-text{flex:1;font-size:14px}
+.task-done{text-decoration:line-through;color:var(--text-secondary)}
+.task-delete{background:none;border:none;color:#d44;font-size:18px;cursor:pointer;padding:4px 8px}
+.progress-bar{width:100%;height:8px;background:#e5e8dd;border-radius:4px;overflow:hidden;margin:12px 0}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--primary-light));border-radius:4px;transition:width 0.3s}
+.progress-text{font-size:13px;color:var(--text-secondary);text-align:center;margin-top:4px}
+.tag{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;margin:2px;background:rgba(85,107,47,0.1);color:var(--primary)}
+.tag-red{background:rgba(200,50,50,0.1);color:#c83232}
+.tag-blue{background:rgba(50,100,200,0.1);color:#3264c8}
+.tag-orange{background:rgba(200,120,30,0.1);color:#c8781e}
+.tag-purple{background:rgba(120,50,200,0.1);color:#7832c8}
+.inspiration-item{padding:14px;background:linear-gradient(135deg,#f8faf4,#f0f3e8);border-radius:12px;margin-bottom:12px;border-left:4px solid var(--primary)}
+.inspiration-title{font-size:15px;font-weight:600;margin-bottom:6px}
+.inspiration-desc{font-size:13px;color:var(--text-secondary);margin-bottom:8px;line-height:1.5}
+.inspiration-actions{display:flex;gap:8px}
+.video-btn{flex:1;display:flex;align-items:center;justify-content:center;padding:8px 12px;border-radius:8px;border:none;font-size:12px;font-weight:500;cursor:pointer}
+.douyin-btn{background:#000;color:#fff}
+.bilibili-btn{background:#fb7299;color:#fff}
+.memo-item{display:flex;align-items:center;padding:10px;background:#fafbf7;border-radius:10px;margin-bottom:6px}
+.memo-checkbox{margin-right:10px;accent-color:var(--primary)}
+.memo-text{flex:1;font-size:14px;background:none;border:none;outline:none}
+.memo-text.done{text-decoration:line-through;color:var(--text-secondary)}
+.stat-row{display:flex;gap:10px;margin-bottom:12px}
+.stat-box{flex:1;padding:12px;background:linear-gradient(135deg,#f8faf4,#f0f3e8);border-radius:12px;text-align:center}
+.stat-value{font-size:20px;font-weight:700;color:var(--primary)}
+.stat-label{font-size:12px;color:var(--text-secondary);margin-top:4px}
+.tab-bar{display:flex;background:#e5e8dd;border-radius:10px;padding:4px;margin-bottom:16px}
+.tab{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:500;border-radius:8px;cursor:pointer;background:none;border:none;color:var(--text-secondary);transition:all 0.2s}
+.tab.active{background:var(--card);color:var(--primary);box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+.news-item{padding:12px;border-bottom:1px solid var(--border);display:flex;gap:10px}
+.news-item:last-child{border-bottom:none}
+.news-source{width:50px;height:50px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:600;flex-shrink:0}
+.news-content{flex:1;min-width:0}
+.news-title{font-size:14px;font-weight:500;margin-bottom:4px;line-height:1.4}
+.news-meta{font-size:12px;color:var(--text-secondary)}
+.news-link{text-decoration:none;color:inherit}
+.stock-card{padding:14px;background:linear-gradient(135deg,#fff,#f8faf4);border-radius:12px;margin-bottom:10px}
+.stock-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.stock-name{font-size:15px;font-weight:600}
+.stock-price{font-size:18px;font-weight:700}
+.stock-change{font-size:13px;padding:3px 8px;border-radius:6px}
+.stock-up{color:#d44}
+.stock-down{color:#4a4}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin:20px 0 12px}
+.section-title{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+.section-title::before{content:'';width:4px;height:16px;background:var(--primary);border-radius:2px}
+.refresh-btn{background:none;border:none;color:var(--primary);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:4px;padding:6px 12px}
+.refresh-btn:active{opacity:0.7}
+.reading-book{padding:14px;background:linear-gradient(135deg,#f8faf4,#f0f3e8);border-radius:12px;margin-bottom:12px}
+.book-header{display:flex;gap:12px;margin-bottom:10px}
+.book-cover{width:50px;height:70px;background:linear-gradient(135deg,var(--primary),var(--primary-light));border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:600;text-align:center;padding:4px}
+.book-info{flex:1}
+.book-title{font-size:15px;font-weight:600;margin-bottom:4px}
+.book-progress{font-size:12px;color:var(--text-secondary);margin-bottom:6px}
+.book-progress-bar{height:6px;background:#e5e8dd;border-radius:3px;margin-top:6px;overflow:hidden}
+.book-progress-fill{height:100%;background:var(--primary);border-radius:3px}
+.chapter-list{margin-top:10px}
+.chapter-item{display:flex;align-items:center;padding:8px;background:#fff;border-radius:8px;margin-bottom:6px;font-size:13px}
+.chapter-type{padding:2px 8px;border-radius:4px;font-size:11px;margin-right:8px}
+.chapter-intensive{background:rgba(200,50,50,0.1);color:#c83232}
+.chapter-extensive{background:rgba(50,100,200,0.1);color:#3264c8}
+.chapter-name{flex:1}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-secondary)}
+.empty-state .icon{font-size:48px;margin-bottom:12px;opacity:0.5}
+.floating-btn{position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;background:var(--primary);color:#fff;border:none;font-size:28px;box-shadow:0 4px 20px rgba(85,107,47,0.3);cursor:pointer;z-index:50;display:flex;align-items:center;justify-content:center}
+.floating-btn:active{transform:scale(0.95)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.video-item{padding:12px;background:#fafbf7;border-radius:10px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.video-icon{font-size:20px}
+.video-info{flex:1;min-width:0}
+.video-title{font-size:14px;font-weight:500;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.video-source{font-size:12px;color:var(--text-secondary)}
+.video-play-btn{padding:6px 12px;border-radius:8px;border:none;font-size:12px;font-weight:500;cursor:pointer}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:400;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.active{display:flex}
+.modal{background:#fff;border-radius:16px;padding:20px;width:100%;max-width:400px;max-height:80vh;overflow-y:auto}
+.modal-title{font-size:18px;font-weight:600;margin-bottom:16px}
+.modal-actions{display:flex;gap:10px;margin-top:16px}
+.modal-actions .btn{flex:1}
+.counter-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:rgba(85,107,47,0.1);color:var(--primary);border:none;font-size:16px;cursor:pointer}
+.counter-btn:active{background:rgba(85,107,47,0.2)}
+.streak-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:linear-gradient(135deg,#ff9a00,#ff6a00);color:#fff;border-radius:12px;font-size:12px;font-weight:500}
+.heat-calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin:12px 0}
+.heat-day{aspect-ratio:1;border-radius:4px;background:#e5e8dd;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-secondary)}
+.heat-day.active{background:var(--primary);color:#fff}
+.heat-day.today{border:2px solid var(--primary-dark)}
+.heat-day.checked{background:var(--primary-light)}
+.heat-label{display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);margin-bottom:6px}
+.quote-card{background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;border-radius:var(--radius);padding:20px;margin-bottom:16px;position:relative;overflow:hidden}
+.quote-card::before{content:'';position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:rgba(255,255,255,0.1);border-radius:50%}
+.quote-card::after{content:'';position:absolute;bottom:-20px;left:-20px;width:60px;height:60px;background:rgba(255,255,255,0.08);border-radius:50%}
+.quote-content{position:relative;z-index:1}
+.quote-mark{font-size:32px;opacity:0.5;line-height:0;margin-bottom:8px}
+.quote-text{font-size:16px;font-weight:500;line-height:1.6;margin-bottom:12px}
+.quote-author{font-size:13px;opacity:0.85;text-align:right}
+.quote-actions{display:flex;gap:8px;margin-top:16px}
+.quote-btn{background:rgba(255,255,255,0.2);color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px}
+.quote-btn:active{background:rgba(255,255,255,0.3)}
+.quote-manage-item{display:flex;align-items:center;padding:12px;background:#fafbf7;border-radius:10px;margin-bottom:8px;gap:10px}
+.quote-manage-text{flex:1;font-size:14px;line-height:1.4}
+@media(min-width:768px){
+.main{max-width:600px;margin:56px auto 0}
+.drawer{width:280px}
+}
+</style>
+</head>
+<body>
+<header class="app-header">
+<button class="menu-btn" onclick="toggleDrawer()">☰</button>
+<div class="app-title" id="appTitle">工作台</div>
+<div class="date-display" id="dateDisplay"></div>
+</header>
+<div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer()"></div>
+<nav class="drawer" id="drawer">
+<div class="drawer-header">
+<div class="drawer-user">
+<div class="drawer-avatar">我</div>
+<div class="drawer-user-info">
+<div class="drawer-name">工作台</div>
+<div class="drawer-date" id="userDate"></div>
+</div>
+</div>
+<div class="drawer-quote">
+<div class="drawer-quote-text" id="drawerQuoteText">加载中...</div>
+<div class="drawer-quote-author" id="drawerQuoteAuthor"></div>
+</div>
+<button class="quote-manage-btn" onclick="manageQuotes()">管理语录 →</button>
+</div>
+<div class="drawer-nav" id="drawerNav">
+<button class="nav-item active" data-module="plan"><span class="nav-icon">📋</span>每日计划</button>
+<button class="nav-item" data-module="inspiration"><span class="nav-icon">💡</span>选题灵感</button>
+<button class="nav-item" data-module="remix"><span class="nav-icon">🎬</span>二创方向</button>
+<button class="nav-item" data-module="review"><span class="nav-icon">📊</span>内容复盘</button>
+<button class="nav-item" data-module="create"><span class="nav-icon">✍️</span>创作打卡</button>
+<button class="nav-item" data-module="frontend"><span class="nav-icon">💻</span>每日前端</button>
+<button class="nav-item" data-module="exercise"><span class="nav-icon">🏋️</span>每日锻炼</button>
+<button class="nav-item" data-module="stock"><span class="nav-icon">📈</span>股票基金</button>
+<button class="nav-item" data-module="reading"><span class="nav-icon">📚</span>每日阅读</button>
+</div>
+</nav>
+<main class="main">
+<section class="module active" id="module-plan">
+<div class="card">
+<div class="card-title"><span><span class="icon">📋</span>每日计划</span><span id="planStreak" class="streak-badge"></span></div>
+<div class="progress-bar"><div class="progress-fill" id="planProgress"></div></div>
+<div class="progress-text" id="planProgressText">0 / 0 完成</div>
+<div style="display:flex;gap:8px;margin-top:12px">
+<input class="input" id="newTaskInput" placeholder="添加新任务..." onkeydown="if(event.key==='Enter')addTask()">
+<button class="btn btn-primary" onclick="addTask()">＋</button>
+</div>
+</div>
+<div class="card">
+<div class="card-title"><span>📝 任务列表</span><button class="btn btn-secondary btn-small" onclick="showPullPlanDialog()">🔄 拉取计划</button></div>
+<div id="taskList"></div>
+</div>
+</section>
+<section class="module" id="module-inspiration">
+<div class="card">
+<div class="card-title"><span><span class="icon">💡</span>每日选题灵感</span><button class="refresh-btn" onclick="refreshInspiration()">🔄 刷新</button></div>
+<div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">每日精选 10 条选题，点击按钮唤起抖音/B站 App</div>
+<div id="inspirationList"></div>
+</div>
+</section>
+<section class="module" id="module-remix">
+<div class="card">
+<div class="card-title"><span><span class="icon">🎬</span>爆款热点视频二创</span><button class="refresh-btn" onclick="refreshRemix()">🔄 刷新</button></div>
+<div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">聚合当日热点素材，输出二创方向</div>
+<div id="remixList"></div>
+</div>
+</section>
+<section class="module" id="module-review">
+<div class="tab-bar">
+<button class="tab active" onclick="switchReviewTab(event,'content')">内容复盘</button>
+<button class="tab" onclick="switchReviewTab(event,'memo')">备忘录</button>
+</div>
+<div id="reviewContent">
+<div class="card">
+<div class="card-title"><span>📊 内容数据复盘</span></div>
+<div class="stat-row">
+<div class="stat-box"><div class="stat-value" id="statPlays">0</div><div class="stat-label">播放量</div></div>
+<div class="stat-box"><div class="stat-value" id="statLikes">0</div><div class="stat-label">点赞</div></div>
+<div class="stat-box"><div class="stat-value" id="statComments">0</div><div class="stat-label">评论</div></div>
+<div class="stat-box"><div class="stat-value" id="statShares">0</div><div class="stat-label">转发</div></div>
+</div>
+<div style="display:flex;gap:8px;margin-bottom:12px">
+<input class="input" id="inputPlays" placeholder="播放量" type="number">
+<input class="input" id="inputLikes" placeholder="点赞" type="number">
+</div>
+<div style="display:flex;gap:8px;margin-bottom:12px">
+<input class="input" id="inputComments" placeholder="评论" type="number">
+<input class="input" id="inputShares" placeholder="转发" type="number">
+</div>
+<button class="btn btn-primary btn-block" onclick="saveReviewData()">💾 保存数据</button>
+</div>
+<div class="card">
+<div class="card-title"><span>✨ 作品亮点</span></div>
+<textarea class="input textarea" id="reviewHighlights" placeholder="记录视频的亮点、吸引人的地方..."></textarea>
+</div>
+<div class="card">
+<div class="card-title"><span>⚠️ 存在问题</span></div>
+<textarea class="input textarea" id="reviewIssues" placeholder="分析视频存在的问题和不足..."></textarea>
+</div>
+<div class="card">
+<div class="card-title"><span>🚀 后续优化方案</span></div>
+<textarea class="input textarea" id="reviewOptimizations" placeholder="下一步如何改进和优化..."></textarea>
+</div>
+<button class="btn btn-primary btn-block" onclick="saveReviewAll()" style="margin-bottom:20px">💾 保存复盘</button>
+</div>
+<div id="reviewMemo" style="display:none">
+<div class="card">
+<div class="card-title"><span>📝 备忘录</span><button class="btn btn-secondary btn-small" onclick="addMemoRow()">＋ 新增行</button></div>
+<div id="memoList"></div>
+</div>
+</div>
+</section>
+<section class="module" id="module-create">
+<div class="card">
+<div class="card-title"><span><span class="icon">✍️</span>每日创作打卡</span></div>
+<div class="tab-bar">
+<button class="tab active" onclick="switchCreateTab(event,'template')">模板管理</button>
+<button class="tab" onclick="switchCreateTab(event,'generate')">AI生成文案</button>
+</div>
+<div id="templatePanel">
+<div style="display:flex;gap:8px;margin-bottom:12px">
+<input class="input" id="templateName" placeholder="模板名称">
+<button class="btn btn-primary" onclick="saveTemplate()">保存模板</button>
+</div>
+<textarea class="input textarea" id="templateContent" placeholder="输入或粘贴文案模板..."></textarea>
+<div id="templateList" style="margin-top:12px"></div>
+</div>
+<div id="generatePanel" style="display:none">
+<div style="margin-bottom:12px">
+<label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">选择模板</label>
+<select class="input" id="templateSelect"><option value="">-- 选择模板 --</option></select>
+</div>
+<div style="margin-bottom:12px">
+<label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">输入文案内容</label>
+<textarea class="input textarea" id="generateContent" placeholder="输入或粘贴文案素材..."></textarea>
+</div>
+<div style="margin-bottom:12px">
+<label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">粘贴参考链接</label>
+<input class="input" id="generateLink" placeholder="https://...">
+</div>
+<button class="btn btn-primary btn-block" onclick="generateCopy()">🤖 AI 一键生成抖音文案</button>
+<div id="generateResult" style="margin-top:16px;display:none">
+<div class="card-title"><span>📝 生成结果</span></div>
+<div id="generateResultContent" style="background:#fafbf7;padding:14px;border-radius:10px;line-height:1.6;font-size:14px"></div>
+<button class="btn btn-secondary btn-block" style="margin-top:12px" onclick="copyGenerateResult()">📋 复制文案</button>
+</div>
+</div>
+</div>
+</section>
+<section class="module" id="module-frontend">
+<div class="card">
+<div class="card-title"><span><span class="icon">💻</span>每日前端资讯</span><button class="refresh-btn" onclick="refreshFrontend()">🔄 刷新</button></div>
+<div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">聚合前端前沿技术资讯和行业新闻</div>
+<div class="tab-bar">
+<button class="tab active" onclick="switchFrontendTab(event,'news')">技术资讯</button>
+<button class="tab" onclick="switchFrontendTab(event,'plan')">学习计划</button>
+</div>
+<div id="frontendNews"></div>
+<div id="frontendPlan" style="display:none">
+<div class="card" style="background:linear-gradient(135deg,#f8faf4,#f0f3e8)">
+<div style="font-size:14px;font-weight:600;margin-bottom:8px">📅 今日学习计划</div>
+<div id="dailyStudyPlan" style="font-size:13px;line-height:1.6"></div>
+</div>
+<div style="margin-top:12px">
+<button class="btn btn-secondary btn-block" onclick="regenerateStudyPlan()">🔄 重新生成学习计划</button>
+</div>
+</div>
+</div>
+</section>
+<section class="module" id="module-exercise">
+<div class="card">
+<div class="card-title"><span><span class="icon">🏋️</span>每日锻炼</span></div>
+<div class="tab-bar">
+<button class="tab active" onclick="switchExerciseTab(event,'ancient')">古法健身操</button>
+<button class="tab" onclick="switchExerciseTab(event,'eye')">眼保健操</button>
+</div>
+<div id="exerciseAncient">
+<div class="section-header">
+<div class="section-title">📹 古法健身操视频</div>
+<button class="btn btn-secondary btn-small" onclick="showAddVideoDialog('ancient')">＋ 添加</button>
+</div>
+<div id="ancientVideoList"></div>
+</div>
+<div id="exerciseEye" style="display:none">
+<div class="section-header">
+<div class="section-title">👁️ 眼保健操视频</div>
+<button class="btn btn-secondary btn-small" onclick="showAddVideoDialog('eye')">＋ 添加</button>
+</div>
+<div id="eyeVideoList"></div>
+</div>
+</div>
+</section>
+<section class="module" id="module-stock">
+<div class="card">
+<div class="card-title"><span><span class="icon">📈</span>股票 & 基金</span><button class="refresh-btn" onclick="refreshStock()">🔄 刷新</button></div>
+<div class="tab-bar">
+<button class="tab active" onclick="switchStockTab(event,'review')">昨日复盘</button>
+<button class="tab" onclick="switchStockTab(event,'news')">财经热点</button>
+<button class="tab" onclick="switchStockTab(event,'predict')">今日预判</button>
+</div>
+<div id="stockReview"></div>
+<div id="stockNews" style="display:none"></div>
+<div id="stockPredict" style="display:none"></div>
+</div>
+</section>
+<section class="module" id="module-reading">
+<div class="card">
+<div class="card-title"><span><span class="icon">📚</span>每日阅读计划</span><button class="btn btn-secondary btn-small" onclick="showAddBookDialog()">＋ 添加书籍</button></div>
+<div id="readingList"></div>
+</div>
+</section>
+</main>
+<div class="modal-overlay" id="modalOverlay">
+<div class="modal" id="modalContent"></div>
+</div>
+<script>
+const STORAGE_KEYS = {
+tasks:'wb_tasks',inspiration:'wb_inspiration',remix:'wb_remix',
+review:'wb_review',memos:'wb_memos',templates:'wb_templates',
+frontendNews:'wb_frontend_news',frontendPlan:'wb_frontend_plan',
+ancientVideos:'wb_ancient_videos',eyeVideos:'wb_eye_videos',
+stockData:'wb_stock_data',readingBooks:'wb_reading_books',
+dailyStatus:'wb_daily_status'
+};
+
+const DEFAULT_QUOTES=[
+{text:'不要等待机会，而要创造机会。',author:'萧伯纳'},
+{text:'成功不是终点，失败也非末日，继续前进的勇气才是最可贵的。',author:'丘吉尔'},
+{text:'千里之行，始于足下。',author:'老子'},
+{text:'当你真心渴望某样东西时，整个宇宙都会联合起来帮你实现。',author:'《牧羊少年奇幻之旅》'},
+{text:'种一棵树最好的时间是十年前，其次是现在。',author:'谚语'},
+{text:'你所浪费的今天，是昨天死去的人奢望的明天。',author:'佚名'},
+{text:'如果你不出去走走，你就会以为这就是全世界。',author:'《天空之城》'},
+{text:'决定我们成为什么样人的，不是我们的能力，而是我们的选择。',author:'邓布利多'},
+{text:'星光不问赶路人，时光不负有心人。',author:'佚名'},
+{text:'越努力，越幸运。',author:'佚名'},
+{text:'生活不是等待风暴过去，而是学会在雨中起舞。',author:'佚名'},
+{text:'当你想要放弃的时候，想想当初为什么开始。',author:'佚名'}
+];
+
+const DEFAULT_INSPIRATION = [
+{title:'打工人3分钟快手早餐',tags:['美食','生活'],desc:'展示忙碌早晨的营养快手餐，引发打工人共鸣',hot:'🔥12.3w'},
+{title:'这个技能让我月薪翻倍',tags:['职场','干货'],desc:'分享副业变现的实用方法，真实案例展示',hot:'🔥9.8w'},
+{title:'0基础学编程30天逆袭',tags:['编程','学习'],desc:'记录从小白到入门的真实过程，提供学习路线',hot:'🔥15.6w'},
+{title:'独居女生的周末日常',tags:['生活','vlog'],desc:'展示一个人也能过得精致美好，治愈向内容',hot:'🔥7.2w'},
+{title:'穿搭避坑指南',tags:['穿搭','时尚'],desc:'分享普通人穿衣服的常见错误和改进方法',hot:'🔥11.5w'},
+{title:'这5本书改变了我的人生',tags:['读书','成长'],desc:'推荐对自己影响最大的书籍，分享读书感悟',hot:'🔥8.9w'},
+{title:'健身小白入门指南',tags:['健身','运动'],desc:'从零开始的健身计划，适合新手的动作教学',hot:'🔥14.1w'},
+{title:'Python自动化办公神器',tags:['Python','效率'],desc:'用代码自动处理重复工作，提升办公效率',hot:'🔥18.7w'},
+{title:'低成本出租屋改造',tags:['家居','改造'],desc:'用最少的钱打造舒适居住环境，前后对比',hot:'🔥13.2w'},
+{title:'雅思7分备考经验分享',tags:['英语','考试'],desc:'详细分享备考计划、资料选择和心态调整',hot:'🔥6.5w'}
+];
+
+const DEFAULT_REMIX = [
+{source:'热点：某地暴雨致内涝',directions:['救援志愿者视角记录','城市排水系统科普','极端天气应对指南'],style:纪录片+科普},
+{source:'热点：年轻人开始整顿职场',directions:['脱口秀吐槽职场现状','对比中日韩职场文化','HR角度分析整顿浪潮'],style:脱口秀+分析},
+{source:'热点：AI写代码引热议',directions:['实测AI编程能力','程序员饭碗还稳吗','普通人如何用AI提效'],style:实测+讨论},
+{source:'热点：五一出行人次创新高',directions:['冷门目的地推荐','特种兵旅游真实体验','旅行预算规划指南'],style:vlog+攻略},
+{source:'热点：演唱会黄牛票被严打',directions:['揭秘黄牛产业链','正规购票渠道汇总','粉丝如何防骗'],style:调查+指南}
+];
+
+const DEFAULT_FRONTEND_NEWS = [
+{source:'掘金',sourceColor:'#1E88E5',title:'React 19 正式发布：Server Components 成核心特性',meta:'2小时前 · 前端框架'},
+{source:'InfoQ',sourceColor:'#FF6B35',title:'TypeScript 5.6 beta 发布：性能提升 30%',meta:'4小时前 · 编程语言'},
+{source:'GitHub',sourceColor:'#24292e',title:'shadcn-ui 成为本周最热门仓库，已超 100k Stars',meta:'6小时前 · 开源项目'},
+{source:'MDN',sourceColor:'#000',title:'CSS Container Queries 浏览器支持率突破 85%',meta:'8小时前 · CSS 新特性'},
+{source:'Chrome',sourceColor:'#4285F4',title:'Chrome 127：开发者工具新增 AI 辅助功能',meta:'10小时前 · 浏览器更新'},
+{source:'掘金',sourceColor:'#1E88E5',title:'Vite 7 性能实测：构建速度提升 50%',meta:'12小时前 · 构建工具'},
+{source:'InfoQ',sourceColor:'#FF6B35',title:'WebAssembly 在服务端的应用实践',meta:'1天前 · 技术前沿'},
+{source:'GitHub',sourceColor:'#24292e',title:'lucide-icons：轻量级图标库，周下载量破百万',meta:'1天前 · 工具库'}
+];
+
+const DEFAULT_ANCIENT_VIDEOS = [
+{title:'八段锦完整版',source:'抖音',url:'https://v.douyin.com/default-ancient-1/'},
+{title:'五禽戏教学',source:'B站',url:'https://www.bilibili.com/default-ancient-2'},
+{title:'太极拳入门24式',source:'抖音',url:'https://v.douyin.com/default-ancient-3/'}
+];
+
+const DEFAULT_EYE_VIDEOS = [
+{title:'标准眼保健操教学',source:'B站',url:'https://www.bilibili.com/default-eye-1'},
+{title:'10分钟眼部放松',source:'抖音',url:'https://v.douyin.com/default-eye-2/'}
+];
+
+const DEFAULT_STOCK_REVIEW = {
+date:'今日',shanghai:{name:'上证指数',value:'3215.67',change:'+0.85%',up:true},
+shenzhen:{name:'深证成指',value:'10234.56',change:'+1.12%',up:true},
+chinext:{name:'创业板指',value:'2045.78',change:'-0.32%',up:false},
+us:{name:'纳斯达克',value:'18923.45',change:'+0.56%',up:true},
+hangseng:{name:'恒生指数',value:'17856.23',change:'+1.45%',up:true}
+};
+
+const DEFAULT_STOCK_NEWS = [
+{title:'央行宣布降准0.5个百分点，释放流动性信号',time:'早6:30',level:'重大'},
+{title:'新能源汽车销量创新高，产业链企业受益',time:'早7:00',level:'利好'},
+{title:'芯片板块迎政策利好，国产替代加速',time:'早7:30',level:'利好'},
+{title:'美联储议息会议在即，全球市场关注利率决议',time:'早8:00',level:'关注'}
+];
+
+const DEFAULT_STOCK_PREDICT = {
+theme:'科技成长',direction:'震荡向上',keyPoints:['降准释放利好，短期市场情绪有望改善','科技板块有望领涨，关注芯片、AI概念股','注意创业板指的修复情况','北向资金动向是重要观察指标'],
+risk:'警惕短期涨幅过大后的回调风险，控制仓位'
+};
+
+function $(id){return document.getElementById(id)}
+function getStorage(key,def){try{const v=localStorage.getItem(key);return v?JSON.parse(v):def}catch(e){return def}}
+function setStorage(key,val){localStorage.setItem(key,JSON.stringify(val))}
+
+function initDate(){const d=new Date();const w=['日','一','二','三','四','五','六'];$('dateDisplay').textContent=`${d.getMonth()+1}/${d.getDate()} 周${w[d.getDay()]}`;$('userDate').textContent=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`}
+
+function toggleDrawer(){$('drawer').classList.toggle('active');$('drawerOverlay').classList.toggle('active')}
+
+function switchModule(name){document.querySelectorAll('.module').forEach(m=>m.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));$('module-'+name).classList.add('active');document.querySelector(`.nav-item[data-module="${name}"]`).classList.add('active');$('drawer').classList.remove('active');$('drawerOverlay').classList.remove('active');const titles={plan:'每日计划',inspiration:'选题灵感',remix:'二创方向',review:'内容复盘',create:'创作打卡',frontend:'每日前端',exercise:'每日锻炼',stock:'股票基金',reading:'每日阅读'};$('appTitle').textContent=titles[name]||'日常工作台'}
+
+document.querySelectorAll('.nav-item').forEach(item=>item.addEventListener('click',()=>switchModule(item.dataset.module)))
+
+function renderPlan(){let tasks=getStorage(STORAGE_KEYS.tasks,[]);const today=new Date().toDateString();if(!Array.isArray(tasks))tasks=[];let validTasks=tasks.filter(t=>t.date===today);let otherTasks=tasks.filter(t=>t.date!==today);if(validTasks.length===0&&tasks.length>0){$('taskList').innerHTML='<div class="empty-state"><div class="icon">📋</div><p>今日还没有计划任务</p></div>'}else{let doneCount=validTasks.filter(t=>t.done).length;let total=validTasks.length;let pct=total?Math.round(doneCount/total*100):0;$('planProgress').style.width=pct+'%';$('planProgressText').textContent=`${doneCount} / ${total} 完成 (${pct}%)`;let html=validTasks.map((t,i)=>`<div class="task-item"><input type="checkbox" class="task-checkbox" ${t.done?'checked':''} onchange="toggleTask(${i})"><span class="task-text ${t.done?'task-done':''}">${escapeHtml(t.text)}</span><button class="task-delete" onclick="deleteTask(${i})">✕</button></div>`).join('');$('taskList').innerHTML=html}}function escapeHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+function addTask(){const input=$('newTaskInput');const text=input.value.trim();if(!text)return;let tasks=getStorage(STORAGE_KEYS.tasks,[]);const today=new Date().toDateString();tasks.push({text,done:false,date:today,createdAt:Date.now()});setStorage(STORAGE_KEYS.tasks,tasks);input.value='';renderPlan()}
+
+function toggleTask(i){let tasks=getStorage(STORAGE_KEYS.tasks,[]);const today=new Date().toDateString();let validTasks=tasks.filter(t=>t.date===today);let otherTasks=tasks.filter(t=>t.date!==today);validTasks[i].done=!validTasks[i].done;tasks=[...otherTasks,...validTasks];setStorage(STORAGE_KEYS.tasks,tasks);renderPlan()}
+
+function deleteTask(i){let tasks=getStorage(STORAGE_KEYS.tasks,[]);const today=new Date().toDateString();let validTasks=tasks.filter(t=>t.date===today);let otherTasks=tasks.filter(t=>t.date!==today);validTasks.splice(i,1);tasks=[...otherTasks,...validTasks];setStorage(STORAGE_KEYS.tasks,tasks);renderPlan()}
+
+function showPullPlanDialog(){const modal=$('modalOverlay');const content=$('modalContent');content.innerHTML=`<div class="modal-title">🔄 从其他模块拉取计划</div><p style="font-size:14px;color:var(--text-secondary);margin-bottom:16px">选择要拉取的模块，将自动添加相关计划到今日任务</p><button class="btn btn-secondary btn-block" style="margin-bottom:8px" onclick="pullFromModule('frontend')">💻 从「每日前端」拉取</button><button class="btn btn-secondary btn-block" style="margin-bottom:8px" onclick="pullFromModule('exercise')">🏋️ 从「每日锻炼」拉取</button><button class="btn btn-secondary btn-block" style="margin-bottom:8px" onclick="pullFromModule('reading')">📚 从「每日阅读」拉取</button><button class="btn btn btn-block" onclick="closeModal()">取消</button>`;modal.classList.add('active')}
+
+function pullFromModule(type){const today=new Date().toDateString();let templates={frontend:'学习前端技术资讯',exercise:'完成每日锻炼',reading:'完成今日阅读'};let tasks=getStorage(STORAGE_KEYS.tasks,[]);let validTasks=tasks.filter(t=>t.date===today);const template=templates[type];const exists=validTasks.find(t=>t.text===template);if(exists){alert('该计划已存在');closeModal();return}validTasks.push({text:template,done:false,date:today,createdAt:Date.now()});tasks=[...tasks.filter(t=>t.date!==today),...validTasks];setStorage(STORAGE_KEYS.tasks,tasks);closeModal();renderPlan();alert('已添加到今日计划！')}
+
+function closeModal(){$('modalOverlay').classList.remove('active')}
+
+function renderInspiration(){const data=getStorage('wb_inspiration_cache',DEFAULT_INSPIRATION);let html=data.map((item,i)=>`<div class="inspiration-item"><div class="inspiration-title">${i+1}. ${escapeHtml(item.title)}</div><div style="margin-bottom:6px">${(item.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}<span class="tag tag-red">${item.hot||''}</span></div><div class="inspiration-desc">${escapeHtml(item.desc||'')}</div><div class="inspiration-actions"><button class="video-btn douyin-btn" onclick="openDouyin()">🎵 打开抖音</button><button class="video-btn bilibili-btn" onclick="openBilibili()">📺 打开B站</button></div></div>`).join('');$('inspirationList').innerHTML=html}
+
+function openDouyin(){window.location.href='douyin://'}
+function openBilibili(){window.location.href='bilibili://'}
+
+function refreshInspiration(){renderInspiration();alert('灵感已刷新！（演示版本）')}
+
+function renderRemix(){const data=getStorage('wb_remix_cache',DEFAULT_REMIX);let html=data.map((item,i)=>`<div class="inspiration-item" style="border-left-color:#fb7299"><div class="inspiration-title">🔥 热点${i+1}：${escapeHtml(item.source)}</div><div style="font-size:13px;margin-bottom:8px"><span class="tag tag-orange">${escapeHtml(item.style||'')}</span></div><div style="font-size:13px;font-weight:600;margin-bottom:6px">🎬 二创方向：</div><ol style="padding-left:20px;font-size:13px;line-height:1.8"><li>${escapeHtml(item.directions[0]||'')}</li><li>${escapeHtml(item.directions[1]||'')}</li><li>${escapeHtml(item.directions[2]||'')}</li></ol></div>`).join('');$('remixList').innerHTML=html}
+
+function refreshRemix(){renderRemix();alert('二创方向已刷新！（演示版本）')}
+
+function switchReviewTab(e,tab){document.querySelectorAll('#module-review .tab').forEach(t=>t.classList.remove('active'));e.target.classList.add('active');$('reviewContent').style.display=tab==='content'?'block':'none';$('reviewMemo').style.display=tab==='memo'?'block':'none'}
+
+function saveReviewData(){const p=parseInt($('inputPlays').value)||0,l=parseInt($('inputLikes').value)||0,c=parseInt($('inputComments').value)||0,s=parseInt($('inputShares').value)||0;$('statPlays').textContent=p.toLocaleString();$('statLikes').textContent=l.toLocaleString();$('statComments').textContent=c.toLocaleString();$('statShares').textContent=s.toLocaleString();const today=new Date().toDateString();let data=getStorage(STORAGE_KEYS.review,{});data[today]={plays:p,likes:l,comments:c,shares:s};setStorage(STORAGE_KEYS.review,data)}
+
+function loadReviewData(){const today=new Date().toDateString();const data=getStorage(STORAGE_KEYS.review,{});const todayData=data[today];if(todayData){$('inputPlays').value=todayData.plays||'';$('inputLikes').value=todayData.likes||'';$('inputComments').value=todayData.comments||'';$('inputShares').value=todayData.shares||'';$('statPlays').textContent=(todayData.plays||0).toLocaleString();$('statLikes').textContent=(todayData.likes||0).toLocaleString();$('statComments').textContent=(todayData.comments||0).toLocaleString();$('statShares').textContent=(todayData.shares||0).toLocaleString()}}
+
+function saveReviewAll(){const today=new Date().toDateString();let data=getStorage(STORAGE_KEYS.review,{});if(!data[today])data[today]={plays:0,likes:0,comments:0,shares:0};data[today].highlights=$('reviewHighlights').value;data[today].issues=$('reviewIssues').value;data[today].optimizations=$('reviewOptimizations').value;setStorage(STORAGE_KEYS.review,data);alert('复盘已保存！')}
+
+function loadReviewAll(){const today=new Date().toDateString();const data=getStorage(STORAGE_KEYS.review,{});if(data[today]){$('reviewHighlights').value=data[today].highlights||'';$('reviewIssues').value=data[today].issues||'';$('reviewOptimizations').value=data[today].optimizations||''}}
+
+function renderMemos(){let memos=getStorage(STORAGE_KEYS.memos,[]);if(memos.length===0){memos=[{text:'',done:false},{text:'',done:false},{text:'',done:false},{text:'',done:false},{text:'',done:false}];setStorage(STORAGE_KEYS.memos,memos)}let html=memos.map((m,i)=>`<div class="memo-item"><input type="checkbox" class="memo-checkbox" ${m.done?'checked':''} onchange="toggleMemo(${i})"><input type="text" class="memo-text ${m.done?'done':''}" value="${escapeHtml(m.text)}" oninput="updateMemoText(${i},this.value)" placeholder="输入备忘..."><button class="task-delete" onclick="deleteMemo(${i})">✕</button></div>`).join('');$('memoList').innerHTML=html}
+
+function addMemoRow(){let memos=getStorage(STORAGE_KEYS.memos,[]);memos.push({text:'',done:false});setStorage(STORAGE_KEYS.memos,memos);renderMemos()}
+
+function toggleMemo(i){let memos=getStorage(STORAGE_KEYS.memos,[]);memos[i].done=!memos[i].done;setStorage(STORAGE_KEYS.memos,memos);renderMemos()}
+
+function updateMemoText(i,val){let memos=getStorage(STORAGE_KEYS.memos,[]);memos[i].text=val;setStorage(STORAGE_KEYS.memos,memos)}
+
+function deleteMemo(i){let memos=getStorage(STORAGE_KEYS.memos,[]);memos.splice(i,1);if(memos.length<5){while(memos.length<5)memos.push({text:'',done:false})}setStorage(STORAGE_KEYS.memos,memos);renderMemos()}
+
+function switchCreateTab(e,tab){document.querySelectorAll('#module-create .tab').forEach(t=>t.classList.remove('active'));e.target.classList.add('active');$('templatePanel').style.display=tab==='template'?'block':'none';$('generatePanel').style.display=tab==='generate'?'block':'none';if(tab==='generate')updateTemplateSelect()}
+
+function saveTemplate(){const name=$('templateName').value.trim();const content=$('templateContent').value.trim();if(!name||!content){alert('请输入模板名称和内容');return}let templates=getStorage(STORAGE_KEYS.templates,[]);templates.push({name,content,createdAt:Date.now()});setStorage(STORAGE_KEYS.templates,templates);$('templateName').value='';$('templateContent').value='';renderTemplates();alert('模板已保存！')}
+
+function renderTemplates(){const templates=getStorage(STORAGE_KEYS.templates,[]);if(templates.length===0){$('templateList').innerHTML='<div class="empty-state"><div class="icon">📝</div><p>暂无模板</p></div>';return}$('templateList').innerHTML=templates.map((t,i)=>`<div class="video-item"><div class="video-info"><div class="video-title">${escapeHtml(t.name)}</div><div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(t.content.substring(0,30))}...</div></div><button class="btn btn-secondary btn-small" onclick="useTemplate(${i})">使用</button><button class="btn btn-danger btn-small" onclick="deleteTemplate(${i})">删除</button></div>`).join('')}
+
+function deleteTemplate(i){let templates=getStorage(STORAGE_KEYS.templates,[]);templates.splice(i,1);setStorage(STORAGE_KEYS.templates,templates);renderTemplates()}
+
+function useTemplate(i){const templates=getStorage(STORAGE_KEYS.templates,[]);$('templateContent').value=templates[i].content;$('templateName').value=templates[i].name;switchModule('create');document.querySelectorAll('#module-create .tab')[1].click()}
+
+function updateTemplateSelect(){const templates=getStorage(STORAGE_KEYS.templates,[]);let html='<option value="">-- 选择模板 --</option>';templates.forEach((t,i)=>{html+=`<option value="${i}">${escapeHtml(t.name)}</option>`});$('templateSelect').innerHTML=html}
+
+function generateCopy(){const templateIdx=$('templateSelect').value;const content=$('generateContent').value.trim();const link=$('generateLink').value.trim();if(!templateIdx&&!content){alert('请选择模板或输入文案素材');return}if(!window.confirm('即将调用 AI 生成文案（演示模式），是否继续？'))return;$('generateResult').style.display='block';$('generateResultContent').innerHTML='⏳ AI 正在生成文案，请稍候...';setTimeout(()=>{let result=`🎬 【抖音短视频文案】\n\n🔥 开头（前3秒）：\n"我赌5毛，看完这个视频，你一定会感谢自己！"\n\n📝 正文内容：\n${content?'• 核心素材：'+content.substring(0,50)+'\n':''}${link?'• 参考链接：'+link+'\n':''}\n\n💡 价值点：\n• 干货分享，实用可操作\n• 真实案例，有说服力\n• 结尾互动，引导评论\n\n🏷️ 话题标签：\n#实用技巧 #干货分享 #每日学习\n\n💬 引导语：\n"觉得有用的话，记得点赞收藏哦！\n有问题评论区聊聊～"`;$('generateResultContent').innerHTML=result.replace(/\n/g,'<br>')},1000)}
+
+function copyGenerateResult(){const text=$('generateResultContent').innerText;navigator.clipboard.writeText(text).then(()=>alert('文案已复制！')).catch(()=>alert('复制失败，请手动复制'))}
+
+function renderFrontendNews(){const news=getStorage(STORAGE_KEYS.frontendNews,DEFAULT_FRONTEND_NEWS);let html=news.map(n=>`<div class="news-item"><div class="news-source" style="background:${n.sourceColor}">${n.source}</div><div class="news-content"><a class="news-link" href="#" onclick="return false"><div class="news-title">${escapeHtml(n.title)}</div></a><div class="news-meta">${escapeHtml(n.meta)}</div></div></div>`).join('');$('frontendNews').innerHTML=html}
+
+function refreshFrontend(){renderFrontendNews();generateStudyPlan();alert('前端资讯已刷新！（演示版本）')}
+
+function switchFrontendTab(e,tab){document.querySelectorAll('#module-frontend .tab').forEach(t=>t.classList.remove('active'));e.target.classList.add('active');$('frontendNews').style.display=tab==='news'?'block':'none';$('frontendPlan').style.display=tab==='plan'?'block':'none';if(tab==='plan')generateStudyPlan()}
+
+function generateStudyPlan(){const plan=getStorage('wb_frontend_plan_cache',null);const today=new Date().toDateString();if(plan&&plan.date===today){$('dailyStudyPlan').innerHTML=plan.content;return}const news=getStorage(STORAGE_KEYS.frontendNews,DEFAULT_FRONTEND_NEWS);const topics=news.slice(0,3).map(n=>n.title.split(/[：:]/)[0]).filter(Boolean);const content=`📌 今日重点学习：<br>${topics.map((t,i)=>`${i+1}. ${escapeHtml(t)} - 阅读相关文章，理解核心概念`).join('<br>')}<br><br>⏰ 建议时间分配：<br>• 30分钟：阅读技术文章<br>• 20分钟：动手实践代码<br>• 10分钟：整理学习笔记<br><br>🎯 今日目标：掌握1-2个新概念，完成一个Demo`;$('dailyStudyPlan').innerHTML=content;setStorage('wb_frontend_plan_cache',{date:today,content})}
+
+function regenerateStudyPlan(){localStorage.removeItem('wb_frontend_plan_cache');generateStudyPlan()}
+
+function renderExercise(){const ancient=getStorage(STORAGE_KEYS.ancientVideos,DEFAULT_ANCIENT_VIDEOS);const eye=getStorage(STORAGE_KEYS.eyeVideos,DEFAULT_EYE_VIDEOS);renderVideoList('ancientVideoList',ancient,'ancient');renderVideoList('eyeVideoList',eye,'eye')}
+
+function renderVideoList(containerId,videos,type){if(videos.length===0){$(containerId).innerHTML='<div class="empty-state"><div class="icon">🎬</div><p>暂无视频</p></div>';return}$(containerId).innerHTML=videos.map((v,i)=>{const isDouyin=v.source==='抖音';const isBili=v.source==='B站';let icon='🎬';if(isDouyin)icon='🎵';if(isBili)icon='📺';let btnClass=isDouyin?'douyin-btn':(isBili?'bilibili-btn':'btn-primary');return`<div class="video-item"><span class="video-icon">${icon}</span><div class="video-info"><div class="video-title">${escapeHtml(v.title)}</div><div class="video-source">${escapeHtml(v.source)}</div></div><button class="video-play-btn ${btnClass}" onclick="playVideo('${type}',${i})">▶ 播放</button></div>`}).join('')}
+
+function playVideo(type,i){const list=getStorage(type==='ancient'?STORAGE_KEYS.ancientVideos:STORAGE_KEYS.eyeVideos,[]);const v=list[i];if(!v)return;const url=v.url||'';const isDouyin=url.includes('douyin');const isBili=url.includes('bilibili');if(isDouyin){window.location.href='douyin://'}else if(isBili){window.location.href='bilibili://'}else{window.open(url,'_blank')}}
+
+function showAddVideoDialog(type){const modal=$('modalOverlay');const content=$('modalContent');content.innerHTML=`<div class="modal-title">添加${type==='ancient'?'古法健身操':'眼保健操'}视频</div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">视频标题</label><input class="input" id="videoTitle" placeholder="视频标题"></div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">视频来源</label><select class="input" id="videoSource"><option value="抖音">抖音</option><option value="B站">B站</option></select></div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">视频链接</label><input class="input" id="videoUrl" placeholder="https://..."></div><div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="addVideo('${type}')">保存</button></div>`;modal.classList.add('active')}
+
+function addVideo(type){const title=$('videoTitle').value.trim();const source=$('videoSource').value;const url=$('videoUrl').value.trim();if(!title){alert('请输入视频标题');return}const key=type==='ancient'?STORAGE_KEYS.ancientVideos:STORAGE_KEYS.eyeVideos;let videos=getStorage(key,[]);videos.push({title,source,url});setStorage(key,videos);closeModal();renderExercise()}
+
+function switchExerciseTab(e,tab){document.querySelectorAll('#module-exercise .tab').forEach(t=>t.classList.remove('active'));e.target.classList.add('active');$('exerciseAncient').style.display=tab==='ancient'?'block':'none';$('exerciseEye').style.display=tab==='eye'?'block':'none'}
+
+function renderStock(){const review=getStorage('wb_stock_review_cache',DEFAULT_STOCK_REVIEW);const news=getStorage('wb_stock_news_cache',DEFAULT_STOCK_NEWS);const predict=getStorage('wb_stock_predict_cache',DEFAULT_STOCK_PREDICT);let reviewHtml=`<div class="stock-card"><div class="stock-header"><span class="stock-name">${review.shanghai.name}</span><span class="stock-price stock-up">${review.shanghai.value}</span></div><span class="stock-change stock-up">${review.shanghai.change}</span></div><div class="stock-card"><div class="stock-header"><span class="stock-name">${review.shenzhen.name}</span><span class="stock-price stock-up">${review.shenzhen.value}</span></div><span class="stock-change stock-up">${review.shenzhen.change}</span></div><div class="stock-card"><div class="stock-header"><span class="stock-name">${review.chinext.name}</span><span class="stock-price stock-down">${review.chinext.value}</span></div><span class="stock-change stock-down">${review.chinext.change}</span></div><div class="stock-card"><div class="stock-header"><span class="stock-name">${review.us.name}</span><span class="stock-price stock-up">${review.us.value}</span></div><span class="stock-change stock-up">${review.us.change}</span></div><div class="stock-card"><div class="stock-header"><span class="stock-name">${review.hangseng.name}</span><span class="stock-price stock-up">${review.hangseng.value}</span></div><span class="stock-change stock-up">${review.hangseng.change}</span></div>`;$('stockReview').innerHTML=reviewHtml;let newsHtml=news.map(n=>`<div class="news-item"><div class="news-source" style="background:${n.level==='重大'?'#d44':n.level==='利好'?'#4a4':'#fb7299'}">${n.level}</div><div class="news-content"><div class="news-title">${escapeHtml(n.title)}</div><div class="news-meta">${escapeHtml(n.time)}</div></div></div>`).join('');$('stockNews').innerHTML=newsHtml;let predictHtml=`<div class="stock-card" style="background:linear-gradient(135deg,#fff8f0,#fef5e7)"><div style="display:flex;justify-content:space-between;margin-bottom:12px"><div><span class="tag tag-orange">主线：${escapeHtml(predict.theme)}</span></div><div><span style="font-size:14px;font-weight:600;color:${predict.direction.includes('上')?'#d44':'#4a4'}">${escapeHtml(predict.direction)}</span></div></div><div style="font-size:13px;font-weight:600;margin-bottom:8px">🎯 关键观察点：</div><ol style="padding-left:20px;font-size:13px;line-height:2;margin-bottom:12px">${predict.keyPoints.map(k=>`<li>${escapeHtml(k)}</li>`).join('')}</ol><div style="font-size:12px;color:var(--text-secondary);padding:8px;background:rgba(200,120,30,0.1);border-radius:8px">⚠️ 风险提示：${escapeHtml(predict.risk)}</div></div>`;$('stockPredict').innerHTML=predictHtml}
+
+function refreshStock(){renderStock();alert('股票数据已刷新！（演示版本）')}
+
+function switchStockTab(e,tab){document.querySelectorAll('#module-stock .tab').forEach(t=>t.classList.remove('active'));e.target.classList.add('active');$('stockReview').style.display=tab==='review'?'block':'none';$('stockNews').style.display=tab==='news'?'block':'none';$('stockPredict').style.display=tab==='predict'?'block':'none'}
+
+function renderReading(){const books=getStorage(STORAGE_KEYS.readingBooks,[]);if(books.length===0){$('readingList').innerHTML='<div class="empty-state"><div class="icon">📚</div><p>还没有添加书籍</p><p style="font-size:12px">点击上方按钮添加</p></div>';return}$('readingList').innerHTML=books.map((b,i)=>renderBookItem(b,i)).join('')}
+
+function renderBookItem(b,i){let chaptersHtml='';if(b.chapters&&b.chapters.length>0){chaptersHtml='<div class="chapter-list">'+b.chapters.map((c,j)=>`<div class="chapter-item"><span class="chapter-type ${c.type==='intensive'?'chapter-intensive':'chapter-extensive'}">${c.type==='intensive'?'精读':'泛读'}</span><span class="chapter-name">${escapeHtml(c.name)}</span></div>`).join('')+'</div>'}let notesHtml=b.notes?`<div style="margin-top:10px;padding:10px;background:#fafbf7;border-radius:8px;font-size:13px">📝 ${escapeHtml(b.notes)}</div>`:'';return`<div class="reading-book"><div class="book-header"><div class="book-cover">${escapeHtml(b.name.substring(0,2))}</div><div class="book-info"><div class="book-title">${escapeHtml(b.name)}</div><div class="book-progress">📅 已阅读 ${b.streak||0} 天</div><div class="book-progress-bar"><div class="book-progress-fill" style="width:${Math.min(b.progress||0,100)}%"></div></div></div></div>${chaptersHtml}${notesHtml}<div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-secondary btn-small" onclick="showAddChapterDialog(${i})">➕ 添加章节</button><button class="btn btn-secondary btn-small" onclick="showAddNotesDialog(${i})">📝 添加笔记</button><button class="btn btn-primary btn-small" onclick="updateReadingProgress(${i})">✅ 标记今日已读</button><button class="btn btn-danger btn-small" onclick="deleteBook(${i})">🗑️</button></div></div>`}
+
+function showAddBookDialog(){const modal=$('modalOverlay');const content=$('modalContent');content.innerHTML=`<div class="modal-title">📚 添加书籍</div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">书籍名称</label><input class="input" id="bookName" placeholder="例如：深度工作"></div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">作者</label><input class="input" id="bookAuthor" placeholder="作者（可选）"></div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">每日阅读计划</label><input class="input" id="bookPlan" placeholder="例如：每天读30页"></div><div style="margin-bottom:16px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">AI 生成阅读规划</label><button class="btn btn-secondary btn-block" onclick="aiGeneratePlan()">🤖 根据书名生成规划</button></div><div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="addBook()">添加</button></div>`;modal.classList.add('active')}
+
+function addBook(){const name=$('bookName').value.trim();if(!name){alert('请输入书籍名称');return}const author=$('bookAuthor').value.trim();const plan=$('bookPlan').value.trim();let books=getStorage(STORAGE_KEYS.readingBooks,[]);books.push({name,author,plan,chapters:[],notes:'',streak:0,progress:0,lastRead:null,createdAt:Date.now()});setStorage(STORAGE_KEYS.readingBooks,books);closeModal();renderReading()}
+
+function aiGeneratePlan(){const name=$('bookName').value.trim();if(!name){alert('请先输入书籍名称');return}const chapters=[{name:'序言 / 引言',type:'extensive'},{name:'第1-3章 基础概念',type:'intensive'},{name:'第4-6章 核心方法论',type:'intensive'},{name:'第7-9章 实践案例',type:'extensive'},{name:'第10-12章 进阶技巧',type:'intensive'},{name:'结语',type:'extensive'}];const author=$('bookAuthor').value.trim();const plan=$('bookPlan').value.trim()||'每天读30页';let books=getStorage(STORAGE_KEYS.readingBooks,[]);books.push({name,author,plan,chapters,notes:'',streak:0,progress:0,lastRead:null,createdAt:Date.now()});setStorage(STORAGE_KEYS.readingBooks,books);closeModal();renderReading();alert(`已为《${name}》生成阅读规划！\n重点精读章节已标注`)}
+
+function showAddChapterDialog(bookIdx){const modal=$('modalOverlay');const content=$('modalContent');content.innerHTML=`<div class="modal-title">➕ 添加章节</div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">章节名称</label><input class="input" id="chapterName" placeholder="例如：第1章 引言"></div><div style="margin-bottom:16px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">章节类型</label><select class="input" id="chapterType"><option value="intensive">重点精读</option><option value="extensive">泛读了解</option></select></div><div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="addChapter(${bookIdx})">添加</button></div>`;modal.classList.add('active')}
+
+function addChapter(bookIdx){const name=$('chapterName').value.trim();const type=$('chapterType').value;if(!name){alert('请输入章节名称');return}let books=getStorage(STORAGE_KEYS.readingBooks,[]);books[bookIdx].chapters=books[bookIdx].chapters||[];books[bookIdx].chapters.push({name,type});setStorage(STORAGE_KEYS.readingBooks,books);closeModal();renderReading()}
+
+function showAddNotesDialog(bookIdx){const modal=$('modalOverlay');const content=$('modalContent');let books=getStorage(STORAGE_KEYS.readingBooks,[]);const book=books[bookIdx];content.innerHTML=`<div class="modal-title">📝 阅读笔记 - ${escapeHtml(book.name)}</div><div style="margin-bottom:16px"><textarea class="input textarea" id="bookNotes" placeholder="记录你的阅读心得、重点摘录...">${escapeHtml(book.notes||'')}</textarea></div><div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveNotes(${bookIdx})">保存</button></div>`;modal.classList.add('active')}
+
+function saveNotes(bookIdx){const notes=$('bookNotes').value.trim();let books=getStorage(STORAGE_KEYS.readingBooks,[]);books[bookIdx].notes=notes;setStorage(STORAGE_KEYS.readingBooks,books);closeModal();renderReading()}
+
+function updateReadingProgress(bookIdx){const today=new Date().toDateString();let books=getStorage(STORAGE_KEYS.readingBooks,[]);const book=books[bookIdx];if(book.lastRead===today){alert('今日已完成阅读！');return}if(book.lastRead){const last=new Date(book.lastRead);const diff=Math.round((new Date(today)-last)/86400000);if(diff===1){book.streak=(book.streak||0)+1}else if(diff>1){book.streak=1}}else{book.streak=1}book.lastRead=today;book.progress=Math.min((book.progress||0)+Math.random()*3+2,100);books[bookIdx]=book;setStorage(STORAGE_KEYS.readingBooks,books);renderReading();alert(`🎉 阅读打卡成功！连续阅读 ${book.streak} 天`)}
+
+function deleteBook(bookIdx){if(!confirm('确定要删除这本书吗？'))return;let books=getStorage(STORAGE_KEYS.readingBooks,[]);books.splice(bookIdx,1);setStorage(STORAGE_KEYS.readingBooks,books);renderReading()}
+
+function getQuotes(){let quotes=getStorage('wb_quotes',null);if(!quotes||quotes.length===0){quotes=DEFAULT_QUOTES;setStorage('wb_quotes',quotes)}return quotes}
+
+function renderQuote(){const quotes=getQuotes();const today=new Date().toDateString();let idx=getStorage('wb_quote_idx_'+today,-1);if(idx===-1){idx=Math.floor(Math.random()*quotes.length);setStorage('wb_quote_idx_'+today,idx)}const quote=quotes[idx];const qText=$('drawerQuoteText');const qAuthor=$('drawerQuoteAuthor');if(qText)qText.textContent=quote.text;if(qAuthor)qAuthor.textContent=quote.author?quote.author:''}
+
+function nextQuote(){const quotes=getQuotes();const today=new Date().toDateString();let idx=getStorage('wb_quote_idx_'+today,-1);idx=(idx+1)%quotes.length;setStorage('wb_quote_idx_'+today,idx);renderQuote()}
+
+function manageQuotes(){const modal=$('modalOverlay');const content=$('modalContent');renderQuoteManager(content);modal.classList.add('active')}
+
+function renderQuoteManager(content){const quotes=getQuotes();let html=`<div class="modal-title">📝 励志语录管理</div>`;html+=`<div style="margin-bottom:12px"><button class="btn btn-primary btn-block" onclick="showAddQuoteDialog()">➕ 添加新语录</button></div>`;html+=`<div id="quoteManagerList">`;html+=quotes.map((q,i)=>`<div class="quote-manage-item"><div class="quote-manage-text">「${escapeHtml(q.text)}」${q.author?'<br><span style="font-size:12px;color:var(--text-secondary)">— '+escapeHtml(q.author)+'</span>':''}</div><button class="btn btn-secondary btn-small" onclick="editQuote(${i})">编辑</button><button class="btn btn-danger btn-small" onclick="deleteQuote(${i})">删除</button></div>`).join('');html+=`</div>`;html+=`<div style="margin-top:16px"><button class="btn btn-secondary btn-block" onclick="resetDefaultQuotes()">🔄 恢复默认语录</button></div>`;html+=`<div class="modal-actions"><button class="btn btn-primary btn-block" onclick="closeModal()">完成</button></div>`;content.innerHTML=html}
+
+function showAddQuoteDialog(){const modal=$('modalOverlay');const content=$('modalContent');content.innerHTML=`<div class="modal-title">➕ 添加语录</div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">语录内容</label><textarea class="input textarea" id="quoteTextInput" placeholder="输入励志语录..."></textarea></div><div style="margin-bottom:16px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">作者（可选）</label><input class="input" id="quoteAuthorInput" placeholder="作者出处"></div><div class="modal-actions"><button class="btn btn-secondary" onclick="manageQuotes()">取消</button><button class="btn btn-primary" onclick="addQuote()">保存</button></div>`;modal.classList.add('active')}
+
+function addQuote(){const text=$('quoteTextInput').value.trim();const author=$('quoteAuthorInput').value.trim();if(!text){alert('请输入语录内容');return}let quotes=getQuotes();quotes.push({text,author});setStorage('wb_quotes',quotes);manageQuotes()}
+
+function editQuote(idx){const quotes=getQuotes();const q=quotes[idx];const modal=$('modalOverlay');const content=$('modalContent');content.innerHTML=`<div class="modal-title">✏️ 编辑语录</div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">语录内容</label><textarea class="input textarea" id="quoteTextInput">${escapeHtml(q.text)}</textarea></div><div style="margin-bottom:16px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">作者（可选）</label><input class="input" id="quoteAuthorInput" value="${escapeHtml(q.author||'')}"></div><div class="modal-actions"><button class="btn btn-secondary" onclick="manageQuotes()">取消</button><button class="btn btn-primary" onclick="saveQuoteEdit(${idx})">保存</button></div>`;modal.classList.add('active')}
+
+function saveQuoteEdit(idx){const text=$('quoteTextInput').value.trim();const author=$('quoteAuthorInput').value.trim();if(!text){alert('请输入语录内容');return}let quotes=getQuotes();quotes[idx]={text,author};setStorage('wb_quotes',quotes);manageQuotes();renderQuote()}
+
+function deleteQuote(idx){if(!confirm('确定要删除这条语录吗？'))return;let quotes=getQuotes();quotes.splice(idx,1);if(quotes.length===0)quotes=DEFAULT_QUOTES;setStorage('wb_quotes',quotes);manageQuotes();renderQuote()}
+
+function resetDefaultQuotes(){if(!confirm('确定要恢复默认语录吗？自定义语录将被清除。'))return;setStorage('wb_quotes',DEFAULT_QUOTES);manageQuotes();renderQuote()}
+
+initDate();
+renderQuote();
+renderPlan();
+renderInspiration();
+renderRemix();
+loadReviewData();
+loadReviewAll();
+renderMemos();
+renderTemplates();
+renderFrontendNews();
+renderExercise();
+renderStock();
+renderReading();
+
+if ('serviceWorker' in navigator) {
+window.addEventListener('load', () => {
+navigator.serviceWorker.register('./service-worker.js')
+.then(() => console.log('SW registered'))
+.catch(() => console.log('SW registration failed'));
+});
+}
+</script>
+</body>
+</html>
