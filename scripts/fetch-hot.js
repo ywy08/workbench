@@ -1,7 +1,8 @@
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 
-const GIST_ID = process.env.GIST_ID || '';
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
+const OUTPUT_FILE = path.join(__dirname, '..', 'data', 'hot-data.json');
 
 const HOT_API = 'https://api.oioweb.cn/api/common/HotList';
 const BILIBILI_API = 'https://api.bilibili.com/x/web-interface/ranking/v2?rid=0&type=all';
@@ -79,12 +80,7 @@ function generateRemixDirections(items) {
   }));
 }
 
-async function saveToGist(inspiration, remix) {
-  if (!GIST_ID || !GITHUB_TOKEN) {
-    console.log('Gist 配置缺失，跳过推送');
-    return;
-  }
-
+function saveToFile(inspiration, remix) {
   const now = new Date();
   const data = {
     inspiration: inspiration.map((item, i) => ({
@@ -103,30 +99,14 @@ async function saveToGist(inspiration, remix) {
   };
 
   try {
-    const resp = await axios.patch(
-      `https://api.github.com/gists/${GIST_ID}`,
-      {
-        files: {
-          'hot-data.json': {
-            content: JSON.stringify(data, null, 2)
-          }
-        }
-      },
-      {
-        headers: {
-          'Authorization': `token ${GITHUB_TOKEN}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-
-    if (resp.status === 200) {
-      console.log('✅ 已推送到 Gist');
-    } else {
-      console.log('❌ 推送失败:', resp.status);
+    const dir = path.dirname(OUTPUT_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
     }
+    fs.writeFileSync(OUTPUT_FILE, JSON.stringify(data, null, 2), 'utf-8');
+    console.log('✅ 已保存到本地文件');
   } catch (e) {
-    console.log('❌ 推送 Gist 失败:', e.message);
+    console.log('❌ 保存文件失败:', e.message);
   }
 }
 
@@ -147,7 +127,7 @@ async function main() {
   
   const remix = generateRemixDirections(items);
   
-  await saveToGist(inspiration, remix);
+  saveToFile(inspiration, remix);
   
   console.log('✅ 完成！');
   
