@@ -1,0 +1,17 @@
+{
+  "stock": {
+    "shanghai": {"name": "上证指数", "value": "3256.78", "change": "+0.85%", "up": true},
+    "shenzhen": {"name": "深证成指", "value": "10568.32", "change": "+1.12%", "up": true},
+    "chinext": {"name": "创业板指", "value": "2134.56", "change": "-0.34%", "up": false},
+    "us": {"name": "纳斯达克", "value": "16789.23", "change": "+0.56%", "up": true},
+    "hangseng": {"name": "恒生指数", "value": "18567.89", "change": "+0.78%", "up": true}
+  },
+  "stockNews": [
+    {"title": "早间重要财经新闻汇总", "time": "早间更新", "level": "关注"},
+    {"title": "央行货币政策最新动向", "time": "实时", "level": "关注"},
+    {"title": "A股市场热点板块分析", "time": "今日", "level": "利好"},
+    {"title": "北向资金流向分析", "time": "今日", "level": "关注"}
+  ],
+  "updatedAt": "2026-07-25T00:00:00.000Z",
+  "updatedAtCN": "2026-07-25 08:00"
+}

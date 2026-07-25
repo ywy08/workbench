@@ -1,12 +1,13 @@
-name: Daily Hot Topics Fetch
+name: Daily Data Fetch
 
 on:
   schedule:
-    - cron: '0 0,6,12 * * *'
+    - cron: '0 0,8,14,20 * * *'
+    - cron: '0 6 * * *'
   workflow_dispatch:
 
 jobs:
-  fetch:
+  hot-data:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,17 +20,70 @@ jobs:
       - name: Install dependencies
         run: npm install axios
       
-      - name: Run fetch script
-        run: node scripts/fetch-hot.js
+      - name: Run hot data fetch
+        run: node scripts/fetch-data.js hot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIST_ID: ${{ secrets.GIST_ID }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
       
-      - name: Commit and push
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@users.noreply.github.com"
-          git add data/hot-data.json
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "📊 Update hot data $(date '+%Y-%m-%d %H:%M')"
-            git push
-          fi
+      - name: Commit and push hot data
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: '📊 Update hot data ${{ github.event.head_commit.timestamp }}'
+          file_pattern: data/hot-data.json
+
+  frontend-news:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm install axios
+      
+      - name: Run frontend news fetch
+        run: node scripts/fetch-data.js frontend
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIST_ID: ${{ secrets.GIST_ID }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
+      
+      - name: Commit and push frontend news
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: '💻 Update frontend news ${{ github.event.head_commit.timestamp }}'
+          file_pattern: data/frontend-news.json
+
+  stock-data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm install axios
+      
+      - name: Run stock data fetch
+        run: node scripts/fetch-data.js stock
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIST_ID: ${{ secrets.GIST_ID }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
+      
+      - name: Commit and push stock data
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: '📈 Update stock data ${{ github.event.head_commit.timestamp }}'
+          file_pattern: data/stock-data.json
