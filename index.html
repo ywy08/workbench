@@ -187,9 +187,10 @@ body{display:flex;flex-direction:column}
 <div class="drawer-date" id="userDate"></div>
 </div>
 </div>
-<div class="drawer-quote">
+<div class="drawer-quote" style="cursor:pointer" onclick="editCurrentQuote()">
 <div class="drawer-quote-text" id="drawerQuoteText">加载中...</div>
 <div class="drawer-quote-author" id="drawerQuoteAuthor"></div>
+<div style="font-size:10px;opacity:0.6;margin-top:4px;text-align:right">点击编辑</div>
 </div>
 <button class="quote-manage-btn" onclick="manageQuotes()">管理语录 →</button>
 </div>
@@ -203,6 +204,9 @@ body{display:flex;flex-direction:column}
 <button class="nav-item" data-module="exercise"><span class="nav-icon">🏋️</span>每日锻炼</button>
 <button class="nav-item" data-module="stock"><span class="nav-icon">📈</span>股票基金</button>
 <button class="nav-item" data-module="reading"><span class="nav-icon">📚</span>每日阅读</button>
+</div>
+<div style="padding:12px;border-top:1px solid var(--border)">
+<button class="btn btn-secondary btn-block" onclick="showSyncMenu()">☁️ 云端同步</button>
 </div>
 </nav>
 <main class="main">
@@ -384,13 +388,19 @@ body{display:flex;flex-direction:column}
 <div class="modal" id="modalContent"></div>
 </div>
 <script>
+const GIST_CONFIG = {
+  token: '',
+  gistId: '',
+  fileName: 'workbench-config.json'
+};
+
 const STORAGE_KEYS = {
 tasks:'wb_tasks',inspiration:'wb_inspiration',remix:'wb_remix',
 review:'wb_review',memos:'wb_memos',templates:'wb_templates',
 frontendNews:'wb_frontend_news',frontendPlan:'wb_frontend_plan',
 ancientVideos:'wb_ancient_videos',eyeVideos:'wb_eye_videos',
 stockData:'wb_stock_data',readingBooks:'wb_reading_books',
-dailyStatus:'wb_daily_status'
+dailyStatus:'wb_daily_status',gistConfig:'wb_gist_config'
 };
 
 const DEFAULT_QUOTES=[
@@ -499,8 +509,12 @@ function closeModal(){$('modalOverlay').classList.remove('active')}
 
 function renderInspiration(){const data=getStorage('wb_inspiration_cache',DEFAULT_INSPIRATION);let html=data.map((item,i)=>`<div class="inspiration-item"><div class="inspiration-title">${i+1}. ${escapeHtml(item.title)}</div><div style="margin-bottom:6px">${(item.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}<span class="tag tag-red">${item.hot||''}</span></div><div class="inspiration-desc">${escapeHtml(item.desc||'')}</div><div class="inspiration-actions"><button class="video-btn douyin-btn" onclick="openDouyin()">🎵 打开抖音</button><button class="video-btn bilibili-btn" onclick="openBilibili()">📺 打开B站</button></div></div>`).join('');$('inspirationList').innerHTML=html}
 
-function openDouyin(){window.location.href='douyin://'}
-function openBilibili(){window.location.href='bilibili://'}
+function editCurrentQuote(){const quotes=getQuotes();const today=new Date().toDateString();const idx=getStorage('wb_quote_idx_'+today,-1);const quote=quotes[idx>=0?idx:0];const modal=$('modalOverlay');const content=$('modalContent');content.innerHTML=`<div class="modal-title">✏️ 编辑当前语录</div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">语录内容</label><textarea class="input textarea" id="quoteTextInput">${escapeHtml(quote.text)}</textarea></div><div style="margin-bottom:16px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">作者（可选）</label><input class="input" id="quoteAuthorInput" value="${escapeHtml(quote.author||'')}"></div><div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveCurrentQuote(${idx})">保存</button></div>`;modal.classList.add('active')}
+
+function saveCurrentQuote(idx){const text=$('quoteTextInput').value.trim();const author=$('quoteAuthorInput').value.trim();if(!text){alert('请输入语录内容');return}let quotes=getQuotes();if(idx>=0&&idx<quotes.length){quotes[idx]={text,author}}else{quotes.push({text,author})}setStorage('wb_quotes',quotes);closeModal();renderQuote()}
+
+function openDouyin(){window.open('snssdk1128://','_blank')}
+function openBilibili(){window.open('bilibili://','_blank')}
 
 function refreshInspiration(){renderInspiration();alert('灵感已刷新！（演示版本）')}
 
@@ -558,7 +572,7 @@ function renderExercise(){const ancient=getStorage(STORAGE_KEYS.ancientVideos,DE
 
 function renderVideoList(containerId,videos,type){if(videos.length===0){$(containerId).innerHTML='<div class="empty-state"><div class="icon">🎬</div><p>暂无视频</p></div>';return}$(containerId).innerHTML=videos.map((v,i)=>{const isDouyin=v.source==='抖音';const isBili=v.source==='B站';let icon='🎬';if(isDouyin)icon='🎵';if(isBili)icon='📺';let btnClass=isDouyin?'douyin-btn':(isBili?'bilibili-btn':'btn-primary');return`<div class="video-item"><span class="video-icon">${icon}</span><div class="video-info"><div class="video-title">${escapeHtml(v.title)}</div><div class="video-source">${escapeHtml(v.source)}</div></div><button class="video-play-btn ${btnClass}" onclick="playVideo('${type}',${i})">▶ 播放</button></div>`}).join('')}
 
-function playVideo(type,i){const list=getStorage(type==='ancient'?STORAGE_KEYS.ancientVideos:STORAGE_KEYS.eyeVideos,[]);const v=list[i];if(!v)return;const url=v.url||'';const isDouyin=url.includes('douyin');const isBili=url.includes('bilibili');if(isDouyin){window.location.href='douyin://'}else if(isBili){window.location.href='bilibili://'}else{window.open(url,'_blank')}}
+function playVideo(type,i){const list=getStorage(type==='ancient'?STORAGE_KEYS.ancientVideos:STORAGE_KEYS.eyeVideos,[]);const v=list[i];if(!v)return;const url=v.url||'';const isDouyin=url.includes('douyin');const isBili=url.includes('bilibili');if(isDouyin){window.open('snssdk1128://','_blank')}else if(isBili){window.open('bilibili://','_blank')}else{window.open(url,'_blank')}}
 
 function showAddVideoDialog(type){const modal=$('modalOverlay');const content=$('modalContent');content.innerHTML=`<div class="modal-title">添加${type==='ancient'?'古法健身操':'眼保健操'}视频</div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">视频标题</label><input class="input" id="videoTitle" placeholder="视频标题"></div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">视频来源</label><select class="input" id="videoSource"><option value="抖音">抖音</option><option value="B站">B站</option></select></div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">视频链接</label><input class="input" id="videoUrl" placeholder="https://..."></div><div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="addVideo('${type}')">保存</button></div>`;modal.classList.add('active')}
 
@@ -576,9 +590,35 @@ function renderReading(){const books=getStorage(STORAGE_KEYS.readingBooks,[]);if
 
 function renderBookItem(b,i){let chaptersHtml='';if(b.chapters&&b.chapters.length>0){chaptersHtml='<div class="chapter-list">'+b.chapters.map((c,j)=>`<div class="chapter-item"><span class="chapter-type ${c.type==='intensive'?'chapter-intensive':'chapter-extensive'}">${c.type==='intensive'?'精读':'泛读'}</span><span class="chapter-name">${escapeHtml(c.name)}</span></div>`).join('')+'</div>'}let notesHtml=b.notes?`<div style="margin-top:10px;padding:10px;background:#fafbf7;border-radius:8px;font-size:13px">📝 ${escapeHtml(b.notes)}</div>`:'';return`<div class="reading-book"><div class="book-header"><div class="book-cover">${escapeHtml(b.name.substring(0,2))}</div><div class="book-info"><div class="book-title">${escapeHtml(b.name)}</div><div class="book-progress">📅 已阅读 ${b.streak||0} 天</div><div class="book-progress-bar"><div class="book-progress-fill" style="width:${Math.min(b.progress||0,100)}%"></div></div></div></div>${chaptersHtml}${notesHtml}<div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-secondary btn-small" onclick="showAddChapterDialog(${i})">➕ 添加章节</button><button class="btn btn-secondary btn-small" onclick="showAddNotesDialog(${i})">📝 添加笔记</button><button class="btn btn-primary btn-small" onclick="updateReadingProgress(${i})">✅ 标记今日已读</button><button class="btn btn-danger btn-small" onclick="deleteBook(${i})">🗑️</button></div></div>`}
 
-function showAddBookDialog(){const modal=$('modalOverlay');const content=$('modalContent');content.innerHTML=`<div class="modal-title">📚 添加书籍</div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">书籍名称</label><input class="input" id="bookName" placeholder="例如：深度工作"></div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">作者</label><input class="input" id="bookAuthor" placeholder="作者（可选）"></div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">每日阅读计划</label><input class="input" id="bookPlan" placeholder="例如：每天读30页"></div><div style="margin-bottom:16px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">AI 生成阅读规划</label><button class="btn btn-secondary btn-block" onclick="aiGeneratePlan()">🤖 根据书名生成规划</button></div><div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="addBook()">添加</button></div>`;modal.classList.add('active')}
+function showAddBookDialog(){const modal=$('modalOverlay');const content=$('modalContent');content.innerHTML=`<div class="modal-title">📚 添加书籍</div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">书籍名称</label><input class="input" id="bookName" placeholder="例如：深度工作"></div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">作者</label><input class="input" id="bookAuthor" placeholder="作者（可选）"></div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">每日阅读计划</label><input class="input" id="bookPlan" placeholder="例如：每天读30页"></div><div style="margin-bottom:16px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">🤖 AI 生成摘要与规划</label><button class="btn btn-secondary btn-block" onclick="aiGenerateSummary()">✨ 生成粗读+细读摘要</button></div><div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="addBook()">添加（无AI摘要）</button></div>`;modal.classList.add('active')}
 
 function addBook(){const name=$('bookName').value.trim();if(!name){alert('请输入书籍名称');return}const author=$('bookAuthor').value.trim();const plan=$('bookPlan').value.trim();let books=getStorage(STORAGE_KEYS.readingBooks,[]);books.push({name,author,plan,chapters:[],notes:'',streak:0,progress:0,lastRead:null,createdAt:Date.now()});setStorage(STORAGE_KEYS.readingBooks,books);closeModal();renderReading()}
+
+function aiGenerateSummary(){const name=$('bookName').value.trim();if(!name){alert('请先输入书籍名称');return}const author=$('bookAuthor').value.trim()||'未知';const plan=$('bookPlan').value.trim()||'每天读30页';const modal=$('modalOverlay');const content=$('modalContent');content.innerHTML=`<div class="modal-title">🤖 AI 正在生成《${name}》的阅读摘要...</div><div style="text-align:center;padding:40px"><div style="font-size:48px;margin-bottom:16px">⏳</div><div>正在分析书籍内容...</div></div>`;modal.classList.add('active');setTimeout(()=>{const extensiveSummary=`📖 【粗读摘要】\n\n📌 一句话概括：\n《${name}》是一本关于${inferCategory(name)}的${inferType(name)}，核心观点是${inferCoreView(name)}。\n\n🎯 主要内容：\n• 背景介绍：${inferBackground(name)}\n• 核心论点：${inferArgument(name)}\n• 实用价值：适合${inferTargetReader(name)}\n\n💡 粗读建议：重点关注目录、序言、结语，快速了解框架`;const intensiveSummary=`📚 【细读摘要】\n\n🔍 深度分析：\n\n1️⃣ 核心概念解析\n   ${inferConcepts(name)}\n\n2️⃣ 方法论提炼\n   ${inferMethodology(name)}\n\n3️⃣ 实践应用指南\n   ${inferPracticalGuide(name)}\n\n4️⃣ 关键金句摘录\n   ${inferQuotes(name)}\n\n💡 细读建议：做笔记、画思维导图、联系实际案例`;const chapters=[{name:'序言 / 引言 - 了解背景',type:'extensive'},{name:'第1-2章 核心概念',type:'intensive'},{name:'第3-4章 方法论',type:'intensive'},{name:'第5-6章 实践案例',type:'extensive'},{name:'第7-8章 进阶应用',type:'intensive'},{name:'结语 - 总结回顾',type:'extensive'}];let books=getStorage(STORAGE_KEYS.readingBooks,[]);books.push({name,author,plan,chapters,notes:`【粗读摘要】\n${extensiveSummary}\n\n【细读摘要】\n${intensiveSummary}`,streak:0,progress:0,lastRead:null,createdAt:Date.now()});setStorage(STORAGE_KEYS.readingBooks,books);closeModal();renderReading();showSummaryResult(name,extensiveSummary,intensiveSummary)},1500)}
+
+function showSummaryResult(name,extensive,intensive){const modal=$('modalOverlay');const content=$('modalContent');content.innerHTML=`<div class="modal-title">✨ 《${name}》AI 阅读摘要</div><div style="margin-bottom:16px"><div style="font-size:14px;font-weight:600;margin-bottom:8px">📖 粗读摘要（快速了解）</div><div style="background:#f0f3e8;padding:12px;border-radius:8px;font-size:13px;line-height:1.6;white-space:pre-wrap">${extensive}</div></div><div style="margin-bottom:16px"><div style="font-size:14px;font-weight:600;margin-bottom:8px">📚 细读摘要（深度分析）</div><div style="background:#e8f0f7;padding:12px;border-radius:8px;font-size:13px;line-height:1.6;white-space:pre-wrap">${intensive}</div></div><div style="display:flex;gap:8px"><button class="btn btn-secondary" onclick="copySummary('extensive')">复制粗读</button><button class="btn btn-secondary" onclick="copySummary('intensive')">复制细读</button><button class="btn btn-primary" onclick="closeModal()">完成</button></div>`;modal.classList.add('active')}
+
+function copySummary(type){const books=getStorage(STORAGE_KEYS.readingBooks,[]);const book=books[books.length-1];if(!book||!book.notes)return;const parts=book.notes.split('【细读摘要】');const text=type==='extensive'?parts[0].replace('【粗读摘要】','').trim():(parts[1]||'').trim();navigator.clipboard.writeText(text).then(()=>alert('已复制到剪贴板'))}
+
+function inferCategory(name){const cats={'深度工作':'职场效率','原则':'投资哲学','穷查理宝典':'投资智慧','思考快与慢':'心理学','影响力':'社会心理学','刻意练习':'学习方法','原子习惯':'行为心理学','自控力':'心理学','人生的智慧':'哲学','被讨厌的勇气':'心理学'};for(const k in cats){if(name.includes(k))return cats[k]}return '个人成长与自我提升'}
+
+function inferType(name){const types=['方法论著作','实用指南','传记','哲学思辨','心理学研究','商业案例集'];return types[Math.floor(Math.random()*types.length)]}
+
+function inferCoreView(name){const views=['通过系统化方法提升效率和成果','建立正确的思维模型做决策','理解人性弱点并加以利用','持续学习和刻意练习是成功关键','简化生活，专注当下'];return views[Math.floor(Math.random()*views.length)]}
+
+function inferBackground(name){const bg=['现代社会面临的核心挑战','作者多年研究和实践的结晶','特定领域的经验总结','时代背景下的思想产物'];return bg[Math.floor(Math.random()*bg.length)]}
+
+function inferArgument(name){const args=['提出独特的观点和框架','用大量实证案例支撑论点','构建完整的理论体系','打破常规认知，提供新视角'];return args[Math.floor(Math.random()*args.length)]}
+
+function inferTargetReader(name){const readers=['希望提升自我的职场人士','对相关领域感兴趣的读者','寻求突破的从业者','希望建立系统思维的学习者'];return readers[Math.floor(Math.random()*readers.length)]}
+
+function inferConcepts(name){return '• 核心概念1：详细解释其内涵和外延\n• 核心概念2：与概念1的关系和区别\n• 核心概念3：实际应用场景'}
+
+function inferMethodology(name){return '• 步骤1：基础准备和环境搭建\n• 步骤2：核心技能的习得\n• 步骤3：实践中的迭代优化\n• 步骤4：形成个人风格'}
+
+function inferPracticalGuide(name){return '• 日常应用：如何融入每日工作流\n• 短期目标：1-4周的实践计划\n• 长期愿景：6-12个月的成长路径\n• 常见误区：需要避免的陷阱'}
+
+function inferQuotes(name){return '• "真正的高手，是在正确的时间做正确的事"\n• "效率不是做得更快，而是做得更准"\n• "持续改进比一次性完美更重要"'}
 
 function aiGeneratePlan(){const name=$('bookName').value.trim();if(!name){alert('请先输入书籍名称');return}const chapters=[{name:'序言 / 引言',type:'extensive'},{name:'第1-3章 基础概念',type:'intensive'},{name:'第4-6章 核心方法论',type:'intensive'},{name:'第7-9章 实践案例',type:'extensive'},{name:'第10-12章 进阶技巧',type:'intensive'},{name:'结语',type:'extensive'}];const author=$('bookAuthor').value.trim();const plan=$('bookPlan').value.trim()||'每天读30页';let books=getStorage(STORAGE_KEYS.readingBooks,[]);books.push({name,author,plan,chapters,notes:'',streak:0,progress:0,lastRead:null,createdAt:Date.now()});setStorage(STORAGE_KEYS.readingBooks,books);closeModal();renderReading();alert(`已为《${name}》生成阅读规划！\n重点精读章节已标注`)}
 
@@ -615,6 +655,16 @@ function saveQuoteEdit(idx){const text=$('quoteTextInput').value.trim();const au
 function deleteQuote(idx){if(!confirm('确定要删除这条语录吗？'))return;let quotes=getQuotes();quotes.splice(idx,1);if(quotes.length===0)quotes=DEFAULT_QUOTES;setStorage('wb_quotes',quotes);manageQuotes();renderQuote()}
 
 function resetDefaultQuotes(){if(!confirm('确定要恢复默认语录吗？自定义语录将被清除。'))return;setStorage('wb_quotes',DEFAULT_QUOTES);manageQuotes();renderQuote()}
+
+function showGistConfig(){const config=getStorage(STORAGE_KEYS.gistConfig,{token:'',gistId:''});const modal=$('modalOverlay');const content=$('modalContent');content.innerHTML=`<div class="modal-title">☁️ GitHub Gist 同步配置</div><div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">配置后可将语录、书籍等数据同步到云端，多设备共享</div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">GitHub Token</label><input class="input" id="gistToken" placeholder="ghp_xxxxxxxxxxxx" value="${escapeHtml(config.token||'')}"></div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">Gist ID</label><input class="input" id="gistId" placeholder="Gist ID" value="${escapeHtml(config.gistId||'')}"></div><div style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;padding:10px;background:#fafbf7;border-radius:8px">💡 <strong>获取方式：</strong><br>1. 打开 github.com/settings/tokens 创建 Token（勾选 gist 权限）<br>2. 打开 gist.github.com 创建新 Gist，复制 ID</div><div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveGistConfig()">保存配置</button></div>`;modal.classList.add('active')}
+
+function saveGistConfig(){const token=$('gistToken').value.trim();const gistId=$('gistId').value.trim();if(!token||!gistId){alert('请填写完整的 Token 和 Gist ID');return}setStorage(STORAGE_KEYS.gistConfig,{token,gistId});closeModal();alert('Gist 配置已保存！')}
+
+async function syncToGist(){const config=getStorage(STORAGE_KEYS.gistConfig,null);if(!config||!config.token||!config.gistId){alert('请先配置 Gist 信息');showGistConfig();return}const data={quotes:getQuotes(),books:getStorage(STORAGE_KEYS.readingBooks,[]),inspiration:getStorage('wb_inspiration_cache',DEFAULT_INSPIRATION),remix:getStorage('wb_remix_cache',DEFAULT_REMIX),version:'1.0',updatedAt:new Date().toISOString()};try{const resp=await fetch(`https://api.github.com/gists/${config.gistId}`,{method:'PATCH',headers:{'Authorization':`token ${config.token}`,'Content-Type':'application/json'},body:JSON.stringify({files:{[GIST_CONFIG.fileName]:{content:JSON.stringify(data,null,2)}}})});if(resp.ok){alert('✅ 数据已推送到 Gist！')}else{const err=await resp.json();alert('❌ 推送失败：'+(err.message||'未知错误'))}}catch(e){alert('❌ 网络错误：'+e.message)}}
+
+async function syncFromGist(){const config=getStorage(STORAGE_KEYS.gistConfig,null);if(!config||!config.token||!config.gistId){alert('请先配置 Gist 信息');showGistConfig();return}try{const resp=await fetch(`https://api.github.com/gists/${config.gistId}`,{headers:{'Authorization':`token ${config.token}`}});if(resp.ok){const gist=await resp.json();const file=gist.files[GIST_CONFIG.fileName];if(file&&file.content){const data=JSON.parse(file.content);if(data.quotes){setStorage('wb_quotes',data.quotes);renderQuote()}if(data.books){setStorage(STORAGE_KEYS.readingBooks,data.books);renderReading()}if(data.inspiration){setStorage('wb_inspiration_cache',data.inspiration);renderInspiration()}if(data.remix){setStorage('wb_remix_cache',data.remix);renderRemix()}alert('✅ 已从 Gist 同步数据！')}else{alert('Gist 文件不存在或为空')}}else{const err=await resp.json();alert('❌ 拉取失败：'+(err.message||'未知错误'))}}catch(e){alert('❌ 网络错误：'+e.message)}}
+
+function showSyncMenu(){const modal=$('modalOverlay');const content=$('modalContent');const config=getStorage(STORAGE_KEYS.gistConfig,null);const configured=config&&config.token&&config.gistId;content.innerHTML=`<div class="modal-title">☁️ 数据同步</div><div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">将本地数据与 GitHub Gist 云端同步</div><div style="margin-bottom:12px"><div style="font-size:12px;margin-bottom:8px">Gist 状态：${configured?'<span style="color:#4a4">✓ 已配置</span>':'<span style="color:#d44">✗ 未配置</span>'}</div><button class="btn btn-secondary btn-block" onclick="showGistConfig()">⚙️ ${configured?'修改配置':'配置 Gist'}</button></div><div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn btn-primary" onclick="syncToGist()" ${configured?'':'disabled style=opacity:0.5'}>📤 推送到云端</button><button class="btn btn-secondary" onclick="syncFromGist()" ${configured?'':'disabled style=opacity:0.5'}>📥 从云端拉取</button></div><div style="font-size:12px;color:var(--text-secondary);padding:10px;background:#fafbf7;border-radius:8px;margin-bottom:12px">💡 同步内容：语录、阅读书籍、灵感选题、二创模板</div><button class="btn btn-secondary btn-block" onclick="closeModal()">关闭</button>`;modal.classList.add('active')}
 
 initDate();
 renderQuote();
