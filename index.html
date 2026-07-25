@@ -440,14 +440,14 @@ const DEFAULT_REMIX = [
 ];
 
 const DEFAULT_FRONTEND_NEWS = [
-{source:'掘金',sourceColor:'#1E88E5',title:'React 19 正式发布：Server Components 成核心特性',meta:'2小时前 · 前端框架'},
-{source:'InfoQ',sourceColor:'#FF6B35',title:'TypeScript 5.6 beta 发布：性能提升 30%',meta:'4小时前 · 编程语言'},
-{source:'GitHub',sourceColor:'#24292e',title:'shadcn-ui 成为本周最热门仓库，已超 100k Stars',meta:'6小时前 · 开源项目'},
-{source:'MDN',sourceColor:'#000',title:'CSS Container Queries 浏览器支持率突破 85%',meta:'8小时前 · CSS 新特性'},
-{source:'Chrome',sourceColor:'#4285F4',title:'Chrome 127：开发者工具新增 AI 辅助功能',meta:'10小时前 · 浏览器更新'},
-{source:'掘金',sourceColor:'#1E88E5',title:'Vite 7 性能实测：构建速度提升 50%',meta:'12小时前 · 构建工具'},
-{source:'InfoQ',sourceColor:'#FF6B35',title:'WebAssembly 在服务端的应用实践',meta:'1天前 · 技术前沿'},
-{source:'GitHub',sourceColor:'#24292e',title:'lucide-icons：轻量级图标库，周下载量破百万',meta:'1天前 · 工具库'}
+{source:'掘金',sourceColor:'#1E88E5',title:'React 19 正式发布：Server Components 成核心特性',meta:'2小时前 · 前端框架',url:'https://juejin.cn/post/react-19-release'},
+{source:'InfoQ',sourceColor:'#FF6B35',title:'TypeScript 5.6 beta 发布：性能提升 30%',meta:'4小时前 · 编程语言',url:'https://infoq.cn/article/typescript-5-6'},
+{source:'GitHub',sourceColor:'#24292e',title:'shadcn-ui 成为本周最热门仓库，已超 100k Stars',meta:'6小时前 · 开源项目',url:'https://github.com/shadcn-ui/ui'},
+{source:'MDN',sourceColor:'#000',title:'CSS Container Queries 浏览器支持率突破 85%',meta:'8小时前 · CSS 新特性',url:'https://developer.mozilla.org/docs/Web/CSS/CSS_container_queries'},
+{source:'Chrome',sourceColor:'#4285F4',title:'Chrome 127：开发者工具新增 AI 辅助功能',meta:'10小时前 · 浏览器更新',url:'https://developer.chrome.com/blog/chrome-127'},
+{source:'掘金',sourceColor:'#1E88E5',title:'Vite 7 性能实测：构建速度提升 50%',meta:'12小时前 · 构建工具',url:'https://juejin.cn/post/vite-7-test'},
+{source:'InfoQ',sourceColor:'#FF6B35',title:'WebAssembly 在服务端的应用实践',meta:'1天前 · 技术前沿',url:'https://infoq.cn/article/wasm-server'},
+{source:'GitHub',sourceColor:'#24292e',title:'lucide-icons：轻量级图标库，周下载量破百万',meta:'1天前 · 工具库',url:'https://github.com/lucide-icons/lucide'}
 ];
 
 const DEFAULT_ANCIENT_VIDEOS = [
@@ -558,7 +558,9 @@ function generateCopy(){const templateIdx=$('templateSelect').value;const conten
 
 function copyGenerateResult(){const text=$('generateResultContent').innerText;navigator.clipboard.writeText(text).then(()=>alert('文案已复制！')).catch(()=>alert('复制失败，请手动复制'))}
 
-function renderFrontendNews(){const news=getStorage(STORAGE_KEYS.frontendNews,DEFAULT_FRONTEND_NEWS);let html=news.map(n=>`<div class="news-item"><div class="news-source" style="background:${n.sourceColor}">${n.source}</div><div class="news-content"><a class="news-link" href="#" onclick="return false"><div class="news-title">${escapeHtml(n.title)}</div></a><div class="news-meta">${escapeHtml(n.meta)}</div></div></div>`).join('');$('frontendNews').innerHTML=html}
+function renderFrontendNews(){const news=getStorage(STORAGE_KEYS.frontendNews,DEFAULT_FRONTEND_NEWS);let html=news.map(n=>`<div class="news-item" style="cursor:pointer" onclick="openNewsUrl('${n.url||'#'}')"><div class="news-source" style="background:${n.sourceColor}">${n.source}</div><div class="news-content"><div class="news-title">${escapeHtml(n.title)}</div><div class="news-meta">${escapeHtml(n.meta)}</div></div></div>`).join('');$('frontendNews').innerHTML=html}
+
+function openNewsUrl(url){if(!url||url==='#'){alert('该资讯暂无详情链接');return}window.open(url,'_blank')}
 
 function refreshFrontend(){renderFrontendNews();generateStudyPlan();alert('前端资讯已刷新！（演示版本）')}
 
@@ -679,6 +681,8 @@ renderFrontendNews();
 renderExercise();
 renderStock();
 renderReading();
+
+(async function(){try{const config=getStorage(STORAGE_KEYS.gistConfig,null);if(config&&config.token&&config.gistId){console.log('📥 正在从 Gist 自动同步配置...');const resp=await fetch(`https://api.github.com/gists/${config.gistId}`,{headers:{'Authorization':`token ${config.token}`}});if(resp.ok){const gist=await resp.json();const file=gist.files[GIST_CONFIG.fileName];if(file&&file.content){const data=JSON.parse(file.content);if(data.quotes){setStorage('wb_quotes',data.quotes);renderQuote();console.log('✅ 语录已同步')}if(data.inspiration){setStorage('wb_inspiration_cache',data.inspiration);renderInspiration();console.log('✅ 灵感已同步')}if(data.remix){setStorage('wb_remix_cache',data.remix);renderRemix();console.log('✅ 二创模板已同步')}console.log('📊 Gist 自动同步完成')}}}catch(e){console.log('⚠️ Gist 自动同步失败（不影响使用）:',e.message)}})();
 
 if ('serviceWorker' in navigator) {
 window.addEventListener('load', () => {
