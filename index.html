@@ -190,10 +190,7 @@ body{display:flex;flex-direction:column}
 <div class="drawer-quote" style="cursor:pointer" onclick="editCurrentQuote()">
 <div class="drawer-quote-text" id="drawerQuoteText">加载中...</div>
 <div class="drawer-quote-author" id="drawerQuoteAuthor"></div>
-<div style="font-size:10px;opacity:0.6;margin-top:4px;text-align:right;display:flex;justify-content:space-between;align-items:center">
-<span>点击编辑</span>
-<span onclick="event.stopPropagation();manageQuotes()">管理语录 →</span>
-</div>
+<div style="font-size:10px;opacity:0.6;margin-top:4px;text-align:right">点击编辑</div>
 </div>
 </div>
 <div class="drawer-nav" id="drawerNav">
@@ -407,20 +404,7 @@ stockData:'wb_stock_data',readingBooks:'wb_reading_books',
 dailyStatus:'wb_daily_status',repoConfig:'wb_repo_config'
 };
 
-const DEFAULT_QUOTES=[
-{text:'不要等待机会，而要创造机会。',author:'萧伯纳'},
-{text:'成功不是终点，失败也非末日，继续前进的勇气才是最可贵的。',author:'丘吉尔'},
-{text:'千里之行，始于足下。',author:'老子'},
-{text:'当你真心渴望某样东西时，整个宇宙都会联合起来帮你实现。',author:'《牧羊少年奇幻之旅》'},
-{text:'种一棵树最好的时间是十年前，其次是现在。',author:'谚语'},
-{text:'你所浪费的今天，是昨天死去的人奢望的明天。',author:'佚名'},
-{text:'如果你不出去走走，你就会以为这就是全世界。',author:'《天空之城》'},
-{text:'决定我们成为什么样人的，不是我们的能力，而是我们的选择。',author:'邓布利多'},
-{text:'星光不问赶路人，时光不负有心人。',author:'佚名'},
-{text:'越努力，越幸运。',author:'佚名'},
-{text:'生活不是等待风暴过去，而是学会在雨中起舞。',author:'佚名'},
-{text:'当你想要放弃的时候，想想当初为什么开始。',author:'佚名'}
-];
+const DEFAULT_QUOTE={text:'不要等待机会，而要创造机会。',author:'萧伯纳'};
 
 const DEFAULT_INSPIRATION = [
 {title:'打工人3分钟快手早餐',tags:['美食','生活'],desc:'展示忙碌早晨的营养快手餐，引发打工人共鸣',hot:'🔥12.3w'},
@@ -516,10 +500,6 @@ function pullFromModule(type){const today=new Date().toDateString();let template
 function closeModal(){$('modalOverlay').classList.remove('active')}
 
 function renderInspiration(){const data=getStorage('wb_inspiration_cache',DEFAULT_INSPIRATION);let html=data.map((item,i)=>`<div class="inspiration-item"><div class="inspiration-title">${i+1}. ${escapeHtml(item.title)}</div><div style="margin-bottom:6px">${(item.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}<span class="tag tag-red">${item.hot||''}</span></div><div class="inspiration-desc">${escapeHtml(item.desc||'')}</div><div class="inspiration-actions"><button class="video-btn douyin-btn" onclick="openDouyin()">🎵 打开抖音</button><button class="video-btn bilibili-btn" onclick="openBilibili()">📺 打开B站</button>${item.url?`<button class="video-btn" style="background:#666" onclick="window.open('${item.url}','_blank')">🔗 查看详情</button>`:''}</div></div>`).join('');$('inspirationList').innerHTML=html}
-
-function editCurrentQuote(){const quotes=getQuotes();const today=new Date().toDateString();const idx=getStorage('wb_quote_idx_'+today,-1);const quote=quotes[idx>=0?idx:0];const modal=$('modalOverlay');const content=$('modalContent');content.innerHTML=`<div class="modal-title">✏️ 编辑当前语录</div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">语录内容</label><textarea class="input textarea" id="quoteTextInput">${escapeHtml(quote.text)}</textarea></div><div style="margin-bottom:16px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">作者（可选）</label><input class="input" id="quoteAuthorInput" value="${escapeHtml(quote.author||'')}"></div><div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveCurrentQuote(${idx})">保存</button></div>`;modal.classList.add('active')}
-
-function saveCurrentQuote(idx){const text=$('quoteTextInput').value.trim();const author=$('quoteAuthorInput').value.trim();if(!text){alert('请输入语录内容');return}let quotes=getQuotes();if(idx>=0&&idx<quotes.length){quotes[idx]={text,author}}else{quotes.push({text,author})}setStorage('wb_quotes',quotes);closeModal();renderQuote()}
 
 function openDouyin(){window.open('https://www.douyin.com','_blank','noopener,noreferrer')}
 function openBilibili(){window.open('https://www.bilibili.com','_blank','noopener,noreferrer')}
@@ -646,27 +626,15 @@ function updateReadingProgress(bookIdx){const today=new Date().toDateString();le
 
 function deleteBook(bookIdx){if(!confirm('确定要删除这本书吗？'))return;let books=getStorage(STORAGE_KEYS.readingBooks,[]);books.splice(bookIdx,1);setStorage(STORAGE_KEYS.readingBooks,books);renderReading()}
 
-function getQuotes(){let quotes=getStorage('wb_quotes',null);if(!quotes||quotes.length===0){quotes=DEFAULT_QUOTES;setStorage('wb_quotes',quotes)}return quotes}
+function getQuote(){let quote=getStorage('wb_quote',null);if(!quote){quote=DEFAULT_QUOTE;setStorage('wb_quote',quote)}return quote}
 
-function renderQuote(){const quotes=getQuotes();const today=new Date().toDateString();let idx=getStorage('wb_quote_idx_'+today,-1);if(idx===-1){idx=Math.floor(Math.random()*quotes.length);setStorage('wb_quote_idx_'+today,idx)}const quote=quotes[idx];const qText=$('drawerQuoteText');const qAuthor=$('drawerQuoteAuthor');if(qText)qText.textContent=quote.text;if(qAuthor)qAuthor.textContent=quote.author?quote.author:''}
+function renderQuote(){const quote=getQuote();const qText=$('drawerQuoteText');const qAuthor=$('drawerQuoteAuthor');if(qText)qText.textContent=quote.text;if(qAuthor)qAuthor.textContent=quote.author?quote.author:''}
 
-function nextQuote(){const quotes=getQuotes();const today=new Date().toDateString();let idx=getStorage('wb_quote_idx_'+today,-1);idx=(idx+1)%quotes.length;setStorage('wb_quote_idx_'+today,idx);renderQuote()}
+function editCurrentQuote(){const quote=getQuote();const modal=$('modalOverlay');const content=$('modalContent');content.innerHTML=`<div class="modal-title">✏️ 编辑语录</div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">语录内容</label><textarea class="input textarea" id="quoteTextInput">${escapeHtml(quote.text)}</textarea></div><div style="margin-bottom:16px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">作者（可选）</label><input class="input" id="quoteAuthorInput" value="${escapeHtml(quote.author||'')}"></div><div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveCurrentQuote()">保存</button></div>`;modal.classList.add('active')}
 
-function manageQuotes(){const modal=$('modalOverlay');const content=$('modalContent');renderQuoteManager(content);modal.classList.add('active')}
+function saveCurrentQuote(){const text=$('quoteTextInput').value.trim();const author=$('quoteAuthorInput').value.trim();if(!text){alert('请输入语录内容');return}setStorage('wb_quote',{text,author});closeModal();renderQuote()}
 
-function renderQuoteManager(content){const quotes=getQuotes();let html=`<div class="modal-title">📝 励志语录管理</div>`;html+=`<div style="margin-bottom:12px"><button class="btn btn-primary btn-block" onclick="showAddQuoteDialog()">➕ 添加新语录</button></div>`;html+=`<div id="quoteManagerList">`;html+=quotes.map((q,i)=>`<div class="quote-manage-item"><div class="quote-manage-text">「${escapeHtml(q.text)}」${q.author?'<br><span style="font-size:12px;color:var(--text-secondary)">— '+escapeHtml(q.author)+'</span>':''}</div><button class="btn btn-secondary btn-small" onclick="editQuote(${i})">编辑</button><button class="btn btn-danger btn-small" onclick="deleteQuote(${i})">删除</button></div>`).join('');html+=`</div>`;html+=`<div style="margin-top:16px"><button class="btn btn-secondary btn-block" onclick="resetDefaultQuotes()">🔄 恢复默认语录</button></div>`;html+=`<div class="modal-actions"><button class="btn btn-primary btn-block" onclick="closeModal()">完成</button></div>`;content.innerHTML=html}
-
-function showAddQuoteDialog(){const modal=$('modalOverlay');const content=$('modalContent');content.innerHTML=`<div class="modal-title">➕ 添加语录</div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">语录内容</label><textarea class="input textarea" id="quoteTextInput" placeholder="输入励志语录..."></textarea></div><div style="margin-bottom:16px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">作者（可选）</label><input class="input" id="quoteAuthorInput" placeholder="作者出处"></div><div class="modal-actions"><button class="btn btn-secondary" onclick="manageQuotes()">取消</button><button class="btn btn-primary" onclick="addQuote()">保存</button></div>`;modal.classList.add('active')}
-
-function addQuote(){const text=$('quoteTextInput').value.trim();const author=$('quoteAuthorInput').value.trim();if(!text){alert('请输入语录内容');return}let quotes=getQuotes();quotes.push({text,author});setStorage('wb_quotes',quotes);manageQuotes()}
-
-function editQuote(idx){const quotes=getQuotes();const q=quotes[idx];const modal=$('modalOverlay');const content=$('modalContent');content.innerHTML=`<div class="modal-title">✏️ 编辑语录</div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">语录内容</label><textarea class="input textarea" id="quoteTextInput">${escapeHtml(q.text)}</textarea></div><div style="margin-bottom:16px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">作者（可选）</label><input class="input" id="quoteAuthorInput" value="${escapeHtml(q.author||'')}"></div><div class="modal-actions"><button class="btn btn-secondary" onclick="manageQuotes()">取消</button><button class="btn btn-primary" onclick="saveQuoteEdit(${idx})">保存</button></div>`;modal.classList.add('active')}
-
-function saveQuoteEdit(idx){const text=$('quoteTextInput').value.trim();const author=$('quoteAuthorInput').value.trim();if(!text){alert('请输入语录内容');return}let quotes=getQuotes();quotes[idx]={text,author};setStorage('wb_quotes',quotes);manageQuotes();renderQuote()}
-
-function deleteQuote(idx){if(!confirm('确定要删除这条语录吗？'))return;let quotes=getQuotes();quotes.splice(idx,1);if(quotes.length===0)quotes=DEFAULT_QUOTES;setStorage('wb_quotes',quotes);manageQuotes();renderQuote()}
-
-function resetDefaultQuotes(){if(!confirm('确定要恢复默认语录吗？自定义语录将被清除。'))return;setStorage('wb_quotes',DEFAULT_QUOTES);manageQuotes();renderQuote()}
+function getQuotes(){return [getQuote()]}
 
 function showRepoConfig(){const config=getStorage(STORAGE_KEYS.repoConfig,{token:''});const modal=$('modalOverlay');const content=$('modalContent');content.innerHTML=`<div class="modal-title">☁️ GitHub 云端同步配置</div><div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">配置后可将数据同步到 GitHub 仓库，多设备共享</div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">GitHub Token</label><input class="input" id="repoToken" placeholder="ghp_xxxxxxxxxxxx" value="${escapeHtml(config.token||'')}"></div><div style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;padding:10px;background:#fafbf7;border-radius:8px">💡 <strong>获取方式：</strong><br>1. 打开 github.com/settings/tokens<br>2. 点击 Generate new token，勾选 <code>repo</code> 权限<br>3. 生成后复制 Token 填入</div><div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveRepoConfig()">保存配置</button></div>`;modal.classList.add('active')}
 
@@ -674,9 +642,9 @@ function saveRepoConfig(){const token=$('repoToken').value.trim();if(!token){ale
 
 async function getFileSha(path,token){try{const resp=await fetch(`https://api.github.com/repos/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/contents/${path}?ref=${REPO_CONFIG.branch}`,{headers:{'Authorization':`token ${token}`}});if(resp.ok){const data=await resp.json();return data.sha}}catch(e){}return null}
 
-async function syncToRepo(){const config=getStorage(STORAGE_KEYS.repoConfig,null);if(!config||!config.token){alert('请先配置 GitHub Token');showRepoConfig();return}const data={quotes:getQuotes(),version:'1.0',updatedAt:new Date().toISOString()};try{const sha=await getFileSha(REPO_CONFIG.configFile,config.token);const resp=await fetch(`https://api.github.com/repos/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/contents/${REPO_CONFIG.configFile}`,{method:'PUT',headers:{'Authorization':`token ${config.token}`,'Content-Type':'application/json'},body:JSON.stringify({message:`sync config ${Date.now()}`,content:btoa(JSON.stringify(data,null,2)),branch:REPO_CONFIG.branch,...(sha?{sha}:{})})});if(resp.ok){alert('✅ 数据已推送到 GitHub！')}else{const err=await resp.json();alert('❌ 推送失败：'+(err.message||'未知错误'))}}catch(e){alert('❌ 网络错误：'+e.message)}}
+async function syncToRepo(){const config=getStorage(STORAGE_KEYS.repoConfig,null);if(!config||!config.token){alert('请先配置 GitHub Token');showRepoConfig();return}const data={quote:getQuote(),version:'2.0',updatedAt:new Date().toISOString()};try{const sha=await getFileSha(REPO_CONFIG.configFile,config.token);const resp=await fetch(`https://api.github.com/repos/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/contents/${REPO_CONFIG.configFile}`,{method:'PUT',headers:{'Authorization':`token ${config.token}`,'Content-Type':'application/json'},body:JSON.stringify({message:`sync config ${Date.now()}`,content:btoa(JSON.stringify(data,null,2)),branch:REPO_CONFIG.branch,...(sha?{sha}:{})})});if(resp.ok){alert('✅ 数据已推送到 GitHub！')}else{const err=await resp.json();alert('❌ 推送失败：'+(err.message||'未知错误'))}}catch(e){alert('❌ 网络错误：'+e.message)}}
 
-async function syncFromRepo(){const config=getStorage(STORAGE_KEYS.repoConfig,null);if(!config||!config.token){alert('请先配置 GitHub Token');showRepoConfig();return}try{const resp=await fetch(`https://api.github.com/repos/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/contents/${REPO_CONFIG.configFile}?ref=${REPO_CONFIG.branch}`,{headers:{'Authorization':`token ${config.token}`}});if(resp.ok){const file=await resp.json();const data=JSON.parse(atob(file.content));if(data.quotes){setStorage('wb_quotes',data.quotes);renderQuote()}alert('✅ 已从 GitHub 同步数据！')}else{alert('拉取失败')}}catch(e){alert('❌ 网络错误：'+e.message)}}
+async function syncFromRepo(){const config=getStorage(STORAGE_KEYS.repoConfig,null);if(!config||!config.token){alert('请先配置 GitHub Token');showRepoConfig();return}try{const resp=await fetch(`https://api.github.com/repos/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/contents/${REPO_CONFIG.configFile}?ref=${REPO_CONFIG.branch}`,{headers:{'Authorization':`token ${config.token}`}});if(resp.ok){const file=await resp.json();const data=JSON.parse(atob(file.content));if(data.quote){setStorage('wb_quote',data.quote);renderQuote()}else if(data.quotes&&data.quotes.length>0){setStorage('wb_quote',data.quotes[0]);renderQuote()}alert('✅ 已从 GitHub 同步数据！')}else{alert('拉取失败')}}catch(e){alert('❌ 网络错误：'+e.message)}}
 
 function showSyncMenu(){const modal=$('modalOverlay');const content=$('modalContent');const config=getStorage(STORAGE_KEYS.repoConfig,null);const configured=config&&config.token;content.innerHTML=`<div class="modal-title">☁️ 数据同步</div><div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">将本地数据与 GitHub 仓库云端同步</div><div style="margin-bottom:12px"><div style="font-size:12px;margin-bottom:8px">GitHub 状态：${configured?'<span style="color:#4a4">✓ 已配置</span>':'<span style="color:#d44">✗ 未配置</span>'}</div><button class="btn btn-secondary btn-block" onclick="showRepoConfig()">⚙️ ${configured?'修改配置':'配置 GitHub'}</button></div><div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn btn-primary" onclick="syncToRepo()" ${configured?'':'disabled style=opacity:0.5'}>📤 推送到云端</button><button class="btn btn-secondary" onclick="syncFromRepo()" ${configured?'':'disabled style=opacity:0.5'}>📥 从云端拉取</button></div><div style="font-size:12px;color:var(--text-secondary);padding:10px;background:#fafbf7;border-radius:8px;margin-bottom:12px">💡 同步内容：语录配置（热榜数据由 GitHub Actions 自动更新）</div><button class="btn btn-secondary btn-block" onclick="closeModal()">关闭</button>`;modal.classList.add('active')}
 
@@ -706,7 +674,7 @@ navigator.serviceWorker.register('./service-worker.js')
 
 window.addEventListener('load', async function(){
 try{const hotData=await fetchHotDataFromRepo();if(hotData){if(hotData.inspiration){setStorage('wb_inspiration_cache',hotData.inspiration);renderInspiration();console.log('✅ 热榜灵感已同步')}if(hotData.remix){setStorage('wb_remix_cache',hotData.remix);renderRemix();console.log('✅ 热榜二创已同步')}console.log('📊 热榜数据同步完成')}}catch(e){console.log('⚠️ 热榜数据同步失败（不影响使用）:',e.message)}
-try{const config=getStorage(STORAGE_KEYS.repoConfig,null);if(config&&config.token){console.log('📥 正在从 GitHub 自动同步配置...');const resp=await fetch(`https://api.github.com/repos/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/contents/${REPO_CONFIG.configFile}?ref=${REPO_CONFIG.branch}`,{headers:{'Authorization':`token ${config.token}`}});if(resp.ok){const file=await resp.json();const data=JSON.parse(atob(file.content));if(data.quotes){setStorage('wb_quotes',data.quotes);renderQuote();console.log('✅ 语录已同步')}console.log('📊 GitHub 配置同步完成')}}}catch(e){console.log('⚠️ GitHub 配置同步失败（不影响使用）:',e.message)}});
+try{const config=getStorage(STORAGE_KEYS.repoConfig,null);if(config&&config.token){console.log('📥 正在从 GitHub 自动同步配置...');const resp=await fetch(`https://api.github.com/repos/${REPO_CONFIG.owner}/${REPO_CONFIG.repo}/contents/${REPO_CONFIG.configFile}?ref=${REPO_CONFIG.branch}`,{headers:{'Authorization':`token ${config.token}`}});if(resp.ok){const file=await resp.json();const data=JSON.parse(atob(file.content));if(data.quote){setStorage('wb_quote',data.quote);renderQuote();console.log('✅ 语录已同步')}else if(data.quotes&&data.quotes.length>0){setStorage('wb_quote',data.quotes[0]);renderQuote();console.log('✅ 语录已同步(兼容旧格式)')}console.log('📊 GitHub 配置同步完成')}}}catch(e){console.log('⚠️ GitHub 配置同步失败（不影响使用）:',e.message)}});
 </script>
 </body>
 </html>
