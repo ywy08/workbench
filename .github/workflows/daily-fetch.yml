@@ -1,0 +1,26 @@
+name: Daily Hot Topics Fetch
+
+on:
+  schedule:
+    - cron: '0 0,6,12 * * *'
+  workflow_dispatch:
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm install axios
+      
+      - name: Run fetch script
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIST_ID: ${{ secrets.GIST_ID }}
+        run: node scripts/fetch-hot.js

@@ -507,7 +507,7 @@ function pullFromModule(type){const today=new Date().toDateString();let template
 
 function closeModal(){$('modalOverlay').classList.remove('active')}
 
-function renderInspiration(){const data=getStorage('wb_inspiration_cache',DEFAULT_INSPIRATION);let html=data.map((item,i)=>`<div class="inspiration-item"><div class="inspiration-title">${i+1}. ${escapeHtml(item.title)}</div><div style="margin-bottom:6px">${(item.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}<span class="tag tag-red">${item.hot||''}</span></div><div class="inspiration-desc">${escapeHtml(item.desc||'')}</div><div class="inspiration-actions"><button class="video-btn douyin-btn" onclick="openDouyin()">🎵 打开抖音</button><button class="video-btn bilibili-btn" onclick="openBilibili()">📺 打开B站</button></div></div>`).join('');$('inspirationList').innerHTML=html}
+function renderInspiration(){const data=getStorage('wb_inspiration_cache',DEFAULT_INSPIRATION);let html=data.map((item,i)=>`<div class="inspiration-item"><div class="inspiration-title">${i+1}. ${escapeHtml(item.title)}</div><div style="margin-bottom:6px">${(item.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}<span class="tag tag-red">${item.hot||''}</span></div><div class="inspiration-desc">${escapeHtml(item.desc||'')}</div><div class="inspiration-actions"><button class="video-btn douyin-btn" onclick="openDouyin()">🎵 打开抖音</button><button class="video-btn bilibili-btn" onclick="openBilibili()">📺 打开B站</button>${item.url?`<button class="video-btn" style="background:#666" onclick="window.open('${item.url}','_blank')">🔗 查看详情</button>`:''}</div></div>`).join('');$('inspirationList').innerHTML=html}
 
 function editCurrentQuote(){const quotes=getQuotes();const today=new Date().toDateString();const idx=getStorage('wb_quote_idx_'+today,-1);const quote=quotes[idx>=0?idx:0];const modal=$('modalOverlay');const content=$('modalContent');content.innerHTML=`<div class="modal-title">✏️ 编辑当前语录</div><div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">语录内容</label><textarea class="input textarea" id="quoteTextInput">${escapeHtml(quote.text)}</textarea></div><div style="margin-bottom:16px"><label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px">作者（可选）</label><input class="input" id="quoteAuthorInput" value="${escapeHtml(quote.author||'')}"></div><div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveCurrentQuote(${idx})">保存</button></div>`;modal.classList.add('active')}
 
@@ -516,11 +516,13 @@ function saveCurrentQuote(idx){const text=$('quoteTextInput').value.trim();const
 function openDouyin(){window.open('snssdk1128://','_blank')}
 function openBilibili(){window.open('bilibili://','_blank')}
 
-function refreshInspiration(){renderInspiration();alert('灵感已刷新！（演示版本）')}
+async function fetchHotDataFromGist(){try{const config=getStorage(STORAGE_KEYS.gistConfig,null);if(!config||!config.token||!config.gistId)return null;const resp=await fetch(`https://api.github.com/gists/${config.gistId}`,{headers:{'Authorization':`token ${config.token}`}});if(resp.ok){const gist=await resp.json();const file=gist.files['hot-data.json'];if(file&&file.content){return JSON.parse(file.content)}}}catch(e){console.log('⚠️ 从 Gist 拉取热榜失败:',e.message)}return null}
+
+async function refreshInspiration(){const btn=event.target;const origText=btn.textContent;btn.textContent='⏳ 加载中...';btn.disabled=true;try{const data=await fetchHotDataFromGist();if(data&&data.inspiration){setStorage('wb_inspiration_cache',data.inspiration);renderInspiration();const time=data.updatedAtCN?`（${data.updatedAtCN} 更新）`:'';alert(`✅ 灵感已刷新！${time}`)}else{renderInspiration();alert('暂无云端数据，使用本地默认')}catch(e){renderInspiration();alert('刷新失败，使用本地默认')}finally{btn.textContent=origText;btn.disabled=false}}
 
 function renderRemix(){const data=getStorage('wb_remix_cache',DEFAULT_REMIX);let html=data.map((item,i)=>`<div class="inspiration-item" style="border-left-color:#fb7299"><div class="inspiration-title">🔥 热点${i+1}：${escapeHtml(item.source)}</div><div style="font-size:13px;margin-bottom:8px"><span class="tag tag-orange">${escapeHtml(item.style||'')}</span></div><div style="font-size:13px;font-weight:600;margin-bottom:6px">🎬 二创方向：</div><ol style="padding-left:20px;font-size:13px;line-height:1.8"><li>${escapeHtml(item.directions[0]||'')}</li><li>${escapeHtml(item.directions[1]||'')}</li><li>${escapeHtml(item.directions[2]||'')}</li></ol></div>`).join('');$('remixList').innerHTML=html}
 
-function refreshRemix(){renderRemix();alert('二创方向已刷新！（演示版本）')}
+async function refreshRemix(){const btn=event.target;const origText=btn.textContent;btn.textContent='⏳ 加载中...';btn.disabled=true;try{const data=await fetchHotDataFromGist();if(data&&data.remix){setStorage('wb_remix_cache',data.remix);renderRemix();const time=data.updatedAtCN?`（${data.updatedAtCN} 更新）`:'';alert(`✅ 二创方向已刷新！${time}`)}else{renderRemix();alert('暂无云端数据，使用本地默认')}catch(e){renderRemix();alert('刷新失败，使用本地默认')}finally{btn.textContent=origText;btn.disabled=false}}
 
 function switchReviewTab(e,tab){document.querySelectorAll('#module-review .tab').forEach(t=>t.classList.remove('active'));e.target.classList.add('active');$('reviewContent').style.display=tab==='content'?'block':'none';$('reviewMemo').style.display=tab==='memo'?'block':'none'}
 
@@ -682,7 +684,8 @@ renderExercise();
 renderStock();
 renderReading();
 
-(async function(){try{const config=getStorage(STORAGE_KEYS.gistConfig,null);if(config&&config.token&&config.gistId){console.log('📥 正在从 Gist 自动同步配置...');const resp=await fetch(`https://api.github.com/gists/${config.gistId}`,{headers:{'Authorization':`token ${config.token}`}});if(resp.ok){const gist=await resp.json();const file=gist.files[GIST_CONFIG.fileName];if(file&&file.content){const data=JSON.parse(file.content);if(data.quotes){setStorage('wb_quotes',data.quotes);renderQuote();console.log('✅ 语录已同步')}if(data.inspiration){setStorage('wb_inspiration_cache',data.inspiration);renderInspiration();console.log('✅ 灵感已同步')}if(data.remix){setStorage('wb_remix_cache',data.remix);renderRemix();console.log('✅ 二创模板已同步')}console.log('📊 Gist 自动同步完成')}}}catch(e){console.log('⚠️ Gist 自动同步失败（不影响使用）:',e.message)}})();
+document.querySelectorAll('.nav-item').forEach(item=>item.addEventListener('click',()=>switchModule(item.dataset.module)));
+document.querySelector('.menu-btn').addEventListener('click',toggleDrawer);
 
 if ('serviceWorker' in navigator) {
 window.addEventListener('load', () => {
@@ -691,6 +694,9 @@ navigator.serviceWorker.register('./service-worker.js')
 .catch(() => console.log('SW registration failed'));
 });
 }
+
+window.addEventListener('load', async function(){
+try{const config=getStorage(STORAGE_KEYS.gistConfig,null);if(config&&config.token&&config.gistId){console.log('📥 正在从 Gist 自动同步配置...');const resp=await fetch(`https://api.github.com/gists/${config.gistId}`,{headers:{'Authorization':`token ${config.token}`}});if(resp.ok){const gist=await resp.json();const file=gist.files[GIST_CONFIG.fileName];if(file&&file.content){const data=JSON.parse(file.content);if(data.quotes){setStorage('wb_quotes',data.quotes);renderQuote();console.log('✅ 语录已同步')}if(data.inspiration){setStorage('wb_inspiration_cache',data.inspiration);renderInspiration();console.log('✅ 灵感已同步')}if(data.remix){setStorage('wb_remix_cache',data.remix);renderRemix();console.log('✅ 二创模板已同步')}console.log('📊 Gist 配置同步完成')}const hotFile=gist.files['hot-data.json'];if(hotFile&&hotFile.content){const hotData=JSON.parse(hotFile.content);if(hotData.inspiration){setStorage('wb_inspiration_cache',hotData.inspiration);renderInspiration();console.log('✅ 热榜灵感已同步')}if(hotData.remix){setStorage('wb_remix_cache',hotData.remix);renderRemix();console.log('✅ 热榜二创已同步')}console.log('📊 热榜数据同步完成')}}}}catch(e){console.log('⚠️ Gist 自动同步失败（不影响使用）:',e.message)}}});
 </script>
 </body>
 </html>
