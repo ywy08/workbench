@@ -22,8 +22,8 @@ body{display:flex;flex-direction:column}
 .menu-btn{background:none;border:none;color:#fff;font-size:24px;cursor:pointer;padding:8px;margin-right:12px}
 .app-title{font-size:17px;font-weight:600;flex:1}
 .date-display{font-size:13px;opacity:0.85}
-.drawer-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:200;opacity:0;visibility:hidden;transition:all 0.3s}
-.drawer-overlay.active{opacity:1;visibility:visible}
+.drawer-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:200;opacity:0;visibility:hidden;transition:all 0.3s;pointer-events:none}
+.drawer-overlay.active{opacity:1;visibility:visible;pointer-events:auto}
 .drawer{position:fixed;top:0;left:-280px;bottom:0;width:260px;background:#fff;z-index:300;transition:left 0.3s ease;display:flex;flex-direction:column;box-shadow:2px 0 20px rgba(0,0,0,0.1)}
 .drawer.active{left:0}
 .drawer-header{padding:24px 20px;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff}
@@ -689,7 +689,6 @@ renderStock();
 renderReading();
 
 document.querySelectorAll('.nav-item').forEach(item=>item.addEventListener('click',()=>switchModule(item.dataset.module)));
-document.querySelector('.menu-btn').addEventListener('click',toggleDrawer);
 
 if ('serviceWorker' in navigator) {
 window.addEventListener('load', () => {
