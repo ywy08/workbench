@@ -1,9 +1,9 @@
-const CACHE_NAME = 'workbench-cache-v1';
+const CACHE_NAME = 'workbench-cache-v2';
 const BASE_URL = self.registration.scope;
 
 const precacheResources = [
   './',
-  './workbench.html',
+  './index.html',
   './manifest.json'
 ];
 
@@ -42,7 +42,7 @@ self.addEventListener('fetch', (event) => {
               }
               return response;
             })
-            .catch(() => caches.match('./workbench.html'));
+            .catch(() => caches.match('./index.html'));
         })
     );
   }
