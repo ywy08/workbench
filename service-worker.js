@@ -1,4 +1,4 @@
-const CACHE_NAME = 'workbench-cache-v2';
+const CACHE_NAME = 'workbench-cache-v3';
 const BASE_URL = self.registration.scope;
 
 const precacheResources = [
